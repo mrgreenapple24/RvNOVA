@@ -22,7 +22,7 @@ always begin
     case(alu_op)
 
     3'b010: begin // R-type
-        case(funct3) begin
+        case(funct3)
             3'b000: alu_ctrl = funct7_b5 ? ALU_SUB : ALU_ADD;
             3'b001: alu_ctrl = ALU_SLL;
             3'b010: alu_ctrl = ALU_SLT;
@@ -31,11 +31,10 @@ always begin
             3'b101: alu_ctrl = (funct7_b5) ? ALU_SRA : ALU_SRL;
             3'b110: alu_ctrl = ALU_OR;
             3'b111: alu_ctrl = ALU_AND;
-        end
     end
 
     3'b011: begin // I-type
-        case(funct3) begin
+        case(funct3)
             3'b000: alu_ctrl = ALU_ADD;
             3'b001: alu_ctrl = ALU_SLL;
             3'b010: alu_ctrl = ALU_SLT;
@@ -44,7 +43,6 @@ always begin
             3'b101: alu_ctrl = (funct7_b5) ? ALU_SRA : ALU_SRL;
             3'b110: alu_ctrl = ALU_OR;
             3'b111: alu_ctrl = ALU_AND;
-        end
     end
 
     3'b000: alu_ctrl = ALU_ADD;

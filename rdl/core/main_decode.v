@@ -10,7 +10,7 @@ module main_decode(
     output jump // PC changes
 );
 
-always begin
+always @(*) begin
 
 reg_write  = 0;
 alu_src    = 0;
