@@ -17,7 +17,7 @@ integer i;
 
 always @(posedge clk) begin
     if (!reset) begin
-        for (int i = 0; i < 32; i++) begin
+        for (i = 0; i < 32; i=i+1) begin
             reg_array[i] <= 0;
         end
     end else if (we && (rd_addr != 5'b00000)) begin
