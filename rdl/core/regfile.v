@@ -25,7 +25,7 @@ always @(posedge clk) begin
     end
 end
 
-assign rs1_data = (rs1_addr == 5'b0) ? {32{1'b0}} : reg_array[rs1_addr];
-assign rs2_data = (rs2_addr == 5'b0) ? {32{1'b0}} : reg_array[rs2_addr];
+assign rs1_data = reg_array[rs1_addr];
+assign rs2_data = reg_array[rs2_addr];
 
 endmodule
