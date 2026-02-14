@@ -1,7 +1,7 @@
 module riscv_top (
     input  wire        clk,
     input  wire        rst_n,
-    
+
     // Instruction Memory
     output wire [31:0] pc_out,
     input  wire [31:0] instr_in,
@@ -17,23 +17,22 @@ module riscv_top (
     // ========================================================================
     // Internal Wires
     // ========================================================================
-    reg  [31:0] pc_current;
-    reg  [31:0] pc_next; // Must be reg for always block assignment
-    
+    wire  [31:0] pc_current;
+    wire  [31:0] pc_next;
     wire [31:0] pc_plus_4;
     wire [31:0] pc_target;
-    
+
     // Control Signals
     wire        reg_write;
     wire        alu_src;
     wire        op1_src;
     wire [1:0]  mem_to_reg;
-    wire [2:0]  alu_op; 
+    wire [2:0]  alu_op;
     wire [3:0]  alu_ctrl;
     wire        branch;
     wire        jump;
     wire        is_ecall;
-    
+
     // Datapath Signals
     wire [31:0] rd1_data;
     wire [31:0] rd2_data;
@@ -43,11 +42,12 @@ module riscv_top (
     wire [31:0] alu_result;
     wire        alu_zero;
     wire [31:0] imm_ext;
+    wire jalr;
 
     // ========================================================================
     // Fetch Stage
     // ========================================================================
-    
+
     // PC Flip-Flop
     pc pc_unit (
         .clk(clk),
@@ -77,7 +77,8 @@ module riscv_top (
         .op1_src    (op1_src),
         .is_ecall   (is_ecall),
         .is_ebreak  (), // Leave unconnected
-        .csr_write  ()  // Leave unconnected
+        .csr_write  (),  // Leave unconnected
+        .jalr(jalr)
     );
 
     alu_decode control_alu(
@@ -92,24 +93,24 @@ module riscv_top (
     // ========================================================================
     // Datapath Instantiations
     // ========================================================================
-    
+
     // Register File
     regfile rf (
         .clk        (clk),
         .reset      (rst_n),
         .we         (reg_write),
-        .rs1        (instr_in[19:15]),
-        .rs2        (instr_in[24:20]),
-        .rd         (instr_in[11:7]),
-        .wdata      (write_data),
-        .rdata1     (rd1_data),
-        .rdata2     (rd2_data)
+        .rs1_addr        (instr_in[19:15]),
+        .rs2_addr        (instr_in[24:20]),
+        .rd_addr         (instr_in[11:7]),
+        .w_data      (write_data),
+        .rs1_data (rd1_data),
+        .rs2_data     (rd2_data)
     );
 
     // Immediate Generator
     imm_gen ig (
         .instr      (instr_in),
-        .imm_out    (imm_ext)
+        .imm    (imm_ext)
     );
 
     // ALU Input Muxes
@@ -142,11 +143,15 @@ module riscv_top (
         .pc(pc_current),
         .imm(imm_ext),
         .rs1_data(rd1_data),
-        .cmpr(/* idk what this is advay*/),
+        .cmpr(alu_zero),
         .branch(branch),
         .jump(jump),
-        .jalr(/*ye bhi nai pata lmao*/),
+        .jalr(jalr),
         .pc_next(pc_next)
     );
+
+    assign data_addr  = alu_result;
+    assign data_wdata = rd2_data;
+
 
 endmodule
