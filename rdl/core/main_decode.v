@@ -63,7 +63,7 @@ always @(*) begin
 
         5'b11000: begin // BRANCH
             branch = 1;
-            alu_src = 1;
+            alu_src = 0;
             alu_op  = 3'b001;
         end
 

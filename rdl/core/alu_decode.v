@@ -16,9 +16,12 @@ localparam ALU_SRL  = 4'b0110;
 localparam ALU_SRA  = 4'b0111;
 localparam ALU_OR   = 4'b1000;
 localparam ALU_AND  = 4'b1001;
+localparam ALU_PASSB = 4'b1010;
 
 always @(*) begin
     case(alu_op)
+
+        3'b101: alu_ctrl = ALU_PASSB; // LUI
 
         3'b010: begin // R-type
             case(funct3)
@@ -48,11 +51,21 @@ always @(*) begin
             endcase
         end
 
-        3'b000: alu_ctrl = ALU_ADD;
-        3'b001: alu_ctrl = ALU_SUB;
+        3'b001: begin // BRANCH
+            case(funct3)
+                3'b000: alu_ctrl = ALU_SUB;  // BEQ
+                3'b001: alu_ctrl = ALU_SUB;  // BNE
+                3'b100: alu_ctrl = ALU_SLT;  // BLT
+                3'b101: alu_ctrl = ALU_SLT;  // BGE
+                3'b110: alu_ctrl = ALU_SLTU; // BLTU
+                3'b111: alu_ctrl = ALU_SLTU; // BGEU
+                default: alu_ctrl = ALU_SUB;
+            endcase
+        end
+
+        3'b000: alu_ctrl = ALU_ADD;   // LOAD, STORE, AUIPC
 
         default: alu_ctrl = ALU_ADD;
-
     endcase
 end
 

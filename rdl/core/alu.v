@@ -16,6 +16,7 @@ module alu (
     wire [3:0] sra = 4'b0111;
     wire [3:0] _or = 4'b1000;
     wire [3:0] _and = 4'b1001;
+    wire [3:0] pass_b = 4'b1010;
 
 	always @(*) begin
 		case (alu_ctrl)
@@ -29,6 +30,7 @@ module alu (
 			sra: op = $signed(a) >>> b[4:0];						//SHIFT RIGHT ARITHEMATIC, MSB-EXTENDS
 			_or: op = a | b;										//OR
 			_and: op = a & b;										//AND
+			pass_b: op = b;                                         //PASS B (for LUI)
 			default: op = 32'd0;										//DEFAULT
 		endcase
 	end
