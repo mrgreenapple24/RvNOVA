@@ -22,7 +22,7 @@ Memory: Harvard Architecture (Separate Instruction and Data memory)
 
 # **🛠 Project Structure**
 ```
-├── rdl/core/           # Verilog source files
+├── rtl/core/           # Verilog source files
 │   ├── alu.v           # Arithmetic Logic Unit
 │   ├── alu_decode.v    # Decodes instr for alu
 │   ├── imm_gen.v       # Generates Immediates
@@ -63,7 +63,7 @@ Compile the Verilog files:
 
 
 ```Bash
-iverilog -o processor_sim src/*.v tb/cpu_tb.v
+iverilog -o processor_sim rtl/core/*.v tb/tb_riscv_top.v
 ```
 
 Run the simulation:

@@ -14,7 +14,7 @@ module tb_riscv_top;
     // Data Memory Interface
     wire [31:0] data_addr;
     wire [31:0] data_wdata;
-    wire        data_we;
+    wire [3:0]  data_be;
     wire        data_re;
     reg  [31:0] data_rdata;
 
@@ -28,7 +28,7 @@ module tb_riscv_top;
 
         .data_addr(data_addr),
         .data_wdata(data_wdata),
-        .data_we(data_we),
+        .data_be(data_be),
         .data_re(data_re),
         .data_rdata(data_rdata)
     );
@@ -60,10 +60,13 @@ module tb_riscv_top;
     end
 
     always @(posedge clk) begin
-        if (data_we) begin
-            data_mem[data_addr[9:2]] <= data_wdata;
-            $display("[MEM WRITE] time=%0t addr=0x%08x data=0x%08x",
-                     $time, data_addr, data_wdata);
+        if (|data_be) begin
+            if (data_be[0]) data_mem[data_addr[9:2]][7:0]   <= data_wdata[7:0];
+            if (data_be[1]) data_mem[data_addr[9:2]][15:8]  <= data_wdata[15:8];
+            if (data_be[2]) data_mem[data_addr[9:2]][23:16] <= data_wdata[23:16];
+            if (data_be[3]) data_mem[data_addr[9:2]][31:24] <= data_wdata[31:24];
+            $display("[MEM WRITE] time=%0t addr=0x%08x data=0x%08x be=%b",
+                     $time, data_addr, data_wdata, data_be);
         end
     end
 
@@ -71,8 +74,8 @@ module tb_riscv_top;
     // Debug Monitor
     // ============================================================
     always @(posedge clk) begin
-        $display("time=%0t PC=0x%08x INSTR=0x%08x WE=%b RE=%b ADDR=0x%08x WDATA=0x%08x RDATA=0x%08x",
-                 $time, pc_out, instr_in, data_we, data_re, data_addr, data_wdata, data_rdata);
+        $display("time=%0t PC=0x%08x INSTR=0x%08x BE=%b RE=%b ADDR=0x%08x WDATA=0x%08x RDATA=0x%08x",
+                 $time, pc_out, instr_in, data_be, data_re, data_addr, data_wdata, data_rdata);
     end
 
     // ============================================================
@@ -90,25 +93,37 @@ module tb_riscv_top;
         end
 
         // ========================================================
-        // Example Program
+        // Sub-word Memory Access Test Program
         // ========================================================
-        // addi x1, x0, 10
-        instr_mem[0] = 32'h00A00093;
-
-        // addi x2, x0, 20
-        instr_mem[1] = 32'h01400113;
-
-        // add x3, x1, x2
-        instr_mem[2] = 32'h002081B3;
-
-        // sw x3, 0(x0)
-        instr_mem[3] = 32'h00302023;
-
-        // lw x4, 0(x0)
-        instr_mem[4] = 32'h00002203;
+        // lui x5, 0x12345
+        instr_mem[0] = 32'h123452B7;
+        // addi x5, x5, 0x678 -> x5 = 0x12345678
+        instr_mem[1] = 32'h67828293;
+        // sb x5, 4(x0) -> Store 0x78 at addr 4
+        instr_mem[2] = 32'h00500223;
+        // sh x5, 6(x0) -> Store 0x5678 at addr 6
+        instr_mem[3] = 32'h00501323;
+        // sw x5, 8(x0) -> Store 0x12345678 at addr 8
+        instr_mem[4] = 32'h00502423;
+        // lbu x6, 4(x0) -> Load 0x00000078 from addr 4
+        instr_mem[5] = 32'h00404303;
+        // lb x7, 4(x0) -> Load 0x00000078 from addr 4
+        instr_mem[6] = 32'h00400383;
+        // lhu x8, 6(x0) -> Load 0x00005678 from addr 6
+        instr_mem[7] = 32'h00605403;
+        // lh x9, 6(x0) -> Load 0x00005678 from addr 6
+        instr_mem[8] = 32'h00601483;
+        // addi x10, x0, -1 -> x10 = 0xFFFFFFFF
+        instr_mem[9] = 32'hFFF00513;
+        // sb x10, 12(x0) -> Store 0xFF at addr 12
+        instr_mem[10] = 32'h00A00623;
+        // lb x11, 12(x0) -> Load 0xFFFFFFFF from addr 12 (sign extend)
+        instr_mem[11] = 32'h00C00583;
+        // lbu x12, 12(x0) -> Load 0x000000FF from addr 12 (zero extend)
+        instr_mem[12] = 32'h00C04603;
 
         // infinite loop: jal x0, 0
-        instr_mem[5] = 32'h0000006F;
+        instr_mem[13] = 32'h0000006F;
 
         // ========================================================
         // Reset pulse
@@ -121,7 +136,9 @@ module tb_riscv_top;
 
         // Dump memory result
         $display("--------------------------------------------------");
-        $display("FINAL DATA MEM [0] = 0x%08x", data_mem[0]);
+        $display("FINAL DATA MEM [1] = 0x%08x (expected 0x56780078)", data_mem[1]);
+        $display("FINAL DATA MEM [2] = 0x%08x (expected 0x12345678)", data_mem[2]);
+        $display("FINAL DATA MEM [3] = 0x%08x (expected 0x000000ff)", data_mem[3]);
         $display("--------------------------------------------------");
 
         $finish;

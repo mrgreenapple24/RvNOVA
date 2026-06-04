@@ -9,7 +9,7 @@ module riscv_top (
     // Data Memory
     output wire [31:0] data_addr,
     output wire [31:0] data_wdata,
-    output wire        data_we,
+    output wire [3:0]  data_be,
     output wire        data_re,
     input  wire [31:0] data_rdata
 );
@@ -62,13 +62,15 @@ module riscv_top (
     // ========================================================================
     // Control Unit
     // ========================================================================
+    wire mem_write_internal;
+
     main_decode control (
         .opcode     (instr_in[6:0]),
         .funct3     (instr_in[14:12]),
         .funct12_b0 (instr_in[20]),
         .reg_write  (reg_write),
         .alu_src    (alu_src),
-        .mem_write  (data_we),
+        .mem_write  (mem_write_internal),
         .mem_read   (data_re),
         .mem_to_reg (mem_to_reg),
         .alu_op     (alu_op),
@@ -86,6 +88,27 @@ module riscv_top (
         .funct3(instr_in[14:12]),
         .funct7_b5(instr_in[30]),
         .alu_ctrl(alu_ctrl)
+    );
+
+    // ========================================================================
+    // Load/Store Unit
+    // ========================================================================
+    wire [31:0] load_data_internal;
+    wire        misaligned_exc;
+
+    load_store_unit lsu (
+        .clk            (clk),
+        .addr           (alu_result),
+        .store_data     (rd2_data),
+        .funct3         (instr_in[14:12]),
+        .mem_read       (data_re),
+        .mem_write      (mem_write_internal),
+        .mem_rdata      (data_rdata),
+        .data_addr      (data_addr),
+        .data_wdata     (data_wdata),
+        .data_be        (data_be),
+        .load_data      (load_data_internal),
+        .misaligned_exc (misaligned_exc)
     );
 
 
@@ -132,7 +155,7 @@ module riscv_top (
     always @(*) begin
         case (mem_to_reg)
             2'b00: write_data = alu_result;
-            2'b01: write_data = data_rdata;
+            2'b01: write_data = load_data_internal;
             2'b10: write_data = pc_plus_4;
             default: write_data = 32'b0;
         endcase
@@ -151,9 +174,5 @@ module riscv_top (
         .jalr(jalr),
         .pc_next(pc_next)
     );
-
-    assign data_addr  = alu_result;
-    assign data_wdata = rd2_data;
-
 
 endmodule

@@ -10,7 +10,7 @@ TOP      = tb_riscv_top
 OUT      = sim.out
 VCD      = wave.vcd
 
-SRC      = rdl/core/*.v tb/tb_riscv_top.v
+SRC      = rtl/core/*.v tb/tb_riscv_top.v
 
 all: run
 
