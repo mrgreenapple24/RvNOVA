@@ -17,8 +17,8 @@ module riscv_top (
     // ========================================================================
     // Internal Wires
     // ========================================================================
-    wire  [31:0] pc_current;
-    wire  [31:0] pc_next;
+    wire [31:0] pc_current;
+    wire [31:0] pc_next;
     wire [31:0] pc_plus_4;
     wire [31:0] pc_target;
 
@@ -42,7 +42,7 @@ module riscv_top (
     wire [31:0] alu_result;
     wire        alu_zero;
     wire [31:0] imm_ext;
-    wire jalr;
+    wire        jalr;
 
     // ========================================================================
     // Fetch Stage

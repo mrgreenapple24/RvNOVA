@@ -6,32 +6,32 @@ module alu (
 	output wire zero
 );
 
-    wire [3:0] add = 4'b0000;
-    wire [3:0] sub = 4'b0001;
-    wire [3:0] sll = 4'b0010;
-    wire [3:0] slt = 4'b0011;
-    wire [3:0] sltu = 4'b0100;
-    wire [3:0] _xor = 4'b0101;
-    wire [3:0] srl = 4'b0110;
-    wire [3:0] sra = 4'b0111;
-    wire [3:0] _or = 4'b1000;
-    wire [3:0] _and = 4'b1001;
-    wire [3:0] pass_b = 4'b1010;
+    wire [3:0] ALU_ADD 	 = 4'b0000;
+    wire [3:0] ALU_SUB 	 = 4'b0001;
+    wire [3:0] ALU_SLL 	 = 4'b0010;
+    wire [3:0] ALU_SLT 	 = 4'b0011;
+    wire [3:0] ALU_SLTU  = 4'b0100;
+    wire [3:0] ALU_XOR   = 4'b0101;
+    wire [3:0] ALU_SRL   = 4'b0110;
+    wire [3:0] ALU_SRA   = 4'b0111;
+    wire [3:0] ALU_OR 	 = 4'b1000;
+    wire [3:0] ALU_AND 	 = 4'b1001;
+    wire [3:0] ALU_PASSB = 4'b1010;
 
 	always @(*) begin
 		case (alu_ctrl)
-			add: op = a + b;										//ADD
-			sub: op = a - b;										//SUBTRACT
-			sll: op = a << b[4:0];									//SHIFT LEFT LOGICAL
-			slt: op = ($signed(a) < $signed(b)) ? 32'd1 : 32'd0;	//SET LESS THAN
-			sltu: op = (a < b) ? 32'd1 : 32'd0;						//SET LESS THAN (U), ZERO-EXTENDS
-			_xor: op = a ^ b;										//XOR
-			srl: op = a >> b[4:0];									//SHIFT RIGHT LOGICAL
-			sra: op = $signed(a) >>> b[4:0];						//SHIFT RIGHT ARITHEMATIC, MSB-EXTENDS
-			_or: op = a | b;										//OR
-			_and: op = a & b;										//AND
-			pass_b: op = b;                                         //PASS B (for LUI)
-			default: op = 32'd0;										//DEFAULT
+			ALU_ADD:   op = a + b;										//ADD
+			ALU_SUB:   op = a - b;										//SUBTRACT
+			ALU_SLL:   op = a << b[4:0];								//SHIFT LEFT LOGICAL
+			ALU_SLT:   op = ($signed(a) < $signed(b)) ? 32'd1 : 32'd0;	//SET LESS THAN
+			ALU_SLTU:  op = (a < b) ? 32'd1 : 32'd0;					//SET LESS THAN (U), ZERO-EXTENDS
+			ALU_XOR:   op = a ^ b;										//XOR
+			ALU_SRL:   op = a >> b[4:0];								//SHIFT RIGHT LOGICAL
+			ALU_SRA:   op = $signed(a) >>> b[4:0];						//SHIFT RIGHT ARITHEMATIC, MSB-EXTENDS
+			ALU_OR:    op = a | b;										//OR
+			ALU_AND:   op = a & b;										//AND
+			ALU_PASSB: op = b;                                         	//PASS B (for LUI)
+			default:   op = 32'd0;										//DEFAULT
 		endcase
 	end
 

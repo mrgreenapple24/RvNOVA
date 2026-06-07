@@ -17,16 +17,16 @@ module alu_tb;
 		.zero(zero)
 	);
 
-	wire [3:0] add = 4'b0000;
-    wire [3:0] sub = 4'b0001;
-    wire [3:0] sll = 4'b0010;
-    wire [3:0] slt = 4'b0011;
-    wire [3:0] sltu = 4'b0100;
-    wire [3:0] _xor = 4'b0101;
-    wire [3:0] srl = 4'b0110;
-    wire [3:0] sra = 4'b0111;
-    wire [3:0] _or = 4'b1000;
-    wire [3:0] _and = 4'b1001;
+	wire [3:0] ALU_ADD  = 4'b0000;
+    wire [3:0] ALU_SUB  = 4'b0001;
+    wire [3:0] ALU_SLL  = 4'b0010;
+    wire [3:0] ALU_SLT  = 4'b0011;
+    wire [3:0] ALU_SLTU = 4'b0100;
+    wire [3:0] ALU_XOR  = 4'b0101;
+    wire [3:0] ALU_SRL  = 4'b0110;
+    wire [3:0] ALU_SRA  = 4'b0111;
+    wire [3:0] ALU_OR   = 4'b1000;
+    wire [3:0] ALU_AND  = 4'b1001;
 
 	initial begin
 		$monitor("Time = %0t | alu_ctrl = %b | a = %b | b = %b | op = %b | zero = %b",

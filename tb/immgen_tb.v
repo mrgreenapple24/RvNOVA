@@ -2,7 +2,7 @@
 
 module immgen_tb;
 
-	reg [31:0] instr;
+	reg  [31:0] instr;
 	wire [31:0] imm;
 
 	imm_gen dut (

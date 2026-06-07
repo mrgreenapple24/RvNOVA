@@ -29,12 +29,12 @@ module pc_mux (
 
     always @(*) begin
         case(funct3)
-            3'b000: take_branch = alu_zero;           // BEQ
-            3'b001: take_branch = !alu_zero;          // BNE
-            3'b100: take_branch = alu_result[0];      // BLT
-            3'b101: take_branch = !alu_result[0];     // BGE
-            3'b110: take_branch = alu_result[0];      // BLTU
-            3'b111: take_branch = !alu_result[0];     // BGEU
+            3'b000:  take_branch = alu_zero;           // BEQ
+            3'b001:  take_branch = !alu_zero;          // BNE
+            3'b100:  take_branch = alu_result[0];      // BLT
+            3'b101:  take_branch = !alu_result[0];     // BGE
+            3'b110:  take_branch = alu_result[0];      // BLTU
+            3'b111:  take_branch = !alu_result[0];     // BGEU
             default: take_branch = 1'b0;
         endcase
     end
