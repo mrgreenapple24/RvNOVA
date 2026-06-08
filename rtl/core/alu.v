@@ -1,9 +1,9 @@
 module alu (
-	input wire [31:0] a,
-	input wire [31:0] b,
-	input wire [3:0] alu_ctrl, //from alu_decoder
-	output reg [31:0] op,
-	output wire zero
+	input wire  [31:0] a,
+	input wire  [31:0] b,
+	input wire  [3:0]  alu_ctrl, //from alu_decoder
+	output reg  [31:0] op,
+	output wire 	   zero
 );
 
     wire [3:0] ALU_ADD 	 = 4'b0000;

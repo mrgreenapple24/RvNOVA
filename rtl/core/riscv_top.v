@@ -26,12 +26,14 @@ module riscv_top (
     wire        reg_write;
     wire        alu_src;
     wire        op1_src;
-    wire [1:0]  mem_to_reg;
+    wire [1:0]  reg_mux;
     wire [2:0]  alu_op;
     wire [3:0]  alu_ctrl;
     wire        branch;
     wire        jump;
     wire        is_ecall;
+    wire        is_ebreak;
+    wire        csr_write;
 
     // Datapath Signals
     wire [31:0] rd1_data;
@@ -43,6 +45,9 @@ module riscv_top (
     wire        alu_zero;
     wire [31:0] imm_ext;
     wire        jalr;
+    wire [11:0] csr_addr;
+    wire [31:0] csr_rdata;
+    wire [31:0] csr_wdata;
 
     // ========================================================================
     // Fetch Stage
@@ -72,14 +77,14 @@ module riscv_top (
         .alu_src    (alu_src),
         .mem_write  (mem_write_internal),
         .mem_read   (data_re),
-        .mem_to_reg (mem_to_reg),
+        .reg_mux    (reg_mux),
         .alu_op     (alu_op),
         .branch     (branch),
         .jump       (jump),
         .op1_src    (op1_src),
         .is_ecall   (is_ecall),
-        .is_ebreak  (), // Leave unconnected
-        .csr_write  (),  // Leave unconnected
+        .is_ebreak  (is_ebreak),                     // Leave unconnected. edit 1: connected...
+        .csr_write  (csr_write),                     // Leave unconnected. edit 1: connected...
         .jalr(jalr)
     );
 
@@ -153,10 +158,11 @@ module riscv_top (
     // Writeback Selection (Mux)
     // ========================================================================
     always @(*) begin
-        case (mem_to_reg)
+        case (reg_mux)
             2'b00: write_data = alu_result;
             2'b01: write_data = load_data_internal;
             2'b10: write_data = pc_plus_4;
+            2'b11: write_data = csr_rdata;
             default: write_data = 32'b0;
         endcase
     end
@@ -174,5 +180,18 @@ module riscv_top (
         .jalr(jalr),
         .pc_next(pc_next)
     );
+
+    csr_regfile csr_reg (
+        .clk(clk),
+        .rst_n(rst_n),
+        .csr_we(csr_write),
+        .csr_waddr(csr_addr),
+        .csr_raddr(csr_addr),
+        .csr_wdata(csr_wdata),
+        .csr_rdata(csr_rdata)
+    );
+
+    assign csr_addr = instr_in[31:20];
+    assign csr_wdata = rd1_data;
 
 endmodule

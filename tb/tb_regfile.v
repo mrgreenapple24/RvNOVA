@@ -15,13 +15,13 @@ module tb_regfile;
     regfile uut (
         .clk(clk),
         op1_src = 1;
-        mem_to_reg = 2'b10;
+        reg_mux = 2'b10;
         alu_op = 3'b000;
     end
     5'b11001: begin // JALR
         jump = 1;
         alu_src = 1;
-        mem_to_reg = 2'b10;
+        reg_mux = 2'b10;
         reg_write = 1;
         alu_op = 3'b000;
     end

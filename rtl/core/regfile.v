@@ -1,14 +1,14 @@
 module regfile (
-    input wire clk, // clock
-    input wire reset, // active low reset
-    input wire we, // write enable
-    input wire [4:0] rs1_addr, // reg 1 address
-    input wire [4:0] rs2_addr, // reg 2 address
-    input wire [4:0] rd_addr, // dest reg address
-    input wire [31:0] w_data, // write data
+    input wire         clk,         // clock
+    input wire         reset,       // active low reset
+    input wire         we,          // write enable
+    input wire  [4:0]  rs1_addr,    // reg 1 address
+    input wire  [4:0]  rs2_addr,    // reg 2 address
+    input wire  [4:0]  rd_addr,     // dest reg address
+    input wire  [31:0] w_data,      // write data
 
-    output wire [31:0] rs1_data, // read reg 1 data
-    output wire [31:0] rs2_data // read reg 2 data
+    output wire [31:0] rs1_data,    // read reg 1 data
+    output wire [31:0] rs2_data     // read reg 2 data
 );
 
 reg [31:0] reg_array[31:0];

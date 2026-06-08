@@ -7,7 +7,7 @@ module main_decode(
     output reg        alu_src,      // 0 = rs2, 1 = imm
     output reg        mem_write,
     output reg        mem_read,
-    output reg [1:0]  mem_to_reg,   // 00=ALU, 01=MEM, 10=PC+4
+    output reg [1:0]  reg_mux,   // 00=ALU, 01=MEM, 10=PC+4, 11=SYS
     output reg [2:0]  alu_op,
     output reg        branch,
     output reg        jump,
@@ -24,7 +24,7 @@ always @(*) begin
     alu_src    = 0;
     mem_write  = 0;
     mem_read   = 0;
-    mem_to_reg = 2'b00;
+    reg_mux    = 2'b00;
     alu_op     = 3'b000;
     branch     = 0;
     jump       = 0;
@@ -51,7 +51,7 @@ always @(*) begin
             alu_src    = 1;
             reg_write  = 1;
             mem_read   = 1;
-            mem_to_reg = 2'b01;
+            reg_mux    = 2'b01;
             alu_op     = 3'b000;
         end
 
@@ -72,14 +72,14 @@ always @(*) begin
             reg_write  = 1;
             alu_src    = 1;
             op1_src    = 1;
-            mem_to_reg = 2'b10;
+            reg_mux    = 2'b10;
             alu_op     = 3'b000;
         end
 
         5'b11001: begin // JALR
             jump       = 1;
             alu_src    = 1;
-            mem_to_reg = 2'b10;
+            reg_mux    = 2'b10;
             reg_write  = 1;
             alu_op     = 3'b000;
             jalr       = 1;
@@ -106,8 +106,9 @@ always @(*) begin
                     is_ebreak = 1;
             end
             else begin
-                csr_write = 1;
-                reg_write = 1;
+                reg_mux    = 2'b11;
+                csr_write  = 1;
+                reg_write  = 1;
             end
         end
 
