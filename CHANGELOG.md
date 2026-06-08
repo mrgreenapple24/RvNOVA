@@ -12,3 +12,12 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - Updated memory interface to support 4-bit byte enables.
   - Added SystemVerilog immediate assertions to verify memory operations and alignment.
   - Verified with a comprehensive test suite in `tb/tb_riscv_top.v`.
+
+## [0.2.0] - 2026-06-09
+
+### Added
+- Phase 1.2: CSR Support.
+  - Added `rtl/core/csr_regfile` with support for MSTATUS, MTVEC, MEPC, MCAUSE.
+  - Integrated `csr_regfile.v` into `riscv_top.v`.
+  - Updated register mux to include CSR writeback.
+  - Completed a check using testbench in `tb/tb_csr_regfile.v`.
