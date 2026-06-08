@@ -55,7 +55,7 @@ Simulation Steps
 Clone the repo:
 
 ```Bash
-git clone https://github.com/your-username/riscv-verilog.git
+git clone https://github.com/mrgreenapple24/RvNOVA.git
 cd riscv-verilog
 ```
 
