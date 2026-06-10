@@ -114,7 +114,7 @@ module tb_csr_regfile;
             if (csr_rdata != 32'hFFFFFFFF)
                 $fatal("MEPC FAILED");
 
-// ========================================================================
+        // ========================================================================
         // mstatus
         // ========================================================================
         
@@ -136,6 +136,29 @@ module tb_csr_regfile;
 
             if (csr_rdata != 32'hB00BB00B)
                 $fatal("MCAUSE FAILED");
+
+        // ========================================================================
+        // mtval
+        // ========================================================================
+        
+        csr_we    = 1;
+        csr_waddr = 12'h343;
+        csr_wdata = 32'hDEADDEAD;       //writing
+
+        #10;
+
+        csr_we = 0;
+
+        csr_raddr = 12'h343;            //reading
+
+        #1;
+
+        $display("mtvac = %h", csr_rdata);
+
+        #20;
+
+            if (csr_rdata != 32'hDEADDEAD)
+                $fatal("MSTATUS FAILED");
 
         // ========================================================================
         // reset test
@@ -164,6 +187,11 @@ module tb_csr_regfile;
         #1;
         if (csr_rdata != 32'h0)
             $fatal(1, "RESET FAILED: MCAUSE");
+        
+        csr_raddr = 12'h343;
+        #1;
+        if (csr_rdata != 32'h0)
+            $fatal(1, "RESET FAILED: MTVAL");
 
         $display("ALL TESTS PASSED");
         

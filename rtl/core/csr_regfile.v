@@ -15,6 +15,7 @@ module csr_regfile (
     reg [31:0] mtvec;
     reg [31:0] mepc;
     reg [31:0] mcause;
+    reg [31:0] mtval;
 
     always @(*) begin
         case (csr_raddr)
@@ -23,6 +24,7 @@ module csr_regfile (
             12'h305: csr_rdata = mtvec;
             12'h341: csr_rdata = mepc;
             12'h342: csr_rdata = mcause;
+            12'h343: csr_rdata = mtval;
 
             default: csr_rdata = 32'b0;
         
@@ -36,6 +38,7 @@ module csr_regfile (
             mepc    <= 32'b0;
             mcause  <= 32'b0;
             mtvec   <= 32'b0;
+            mtval   <= 32'b0;
         end
 
         else if (csr_we) begin
@@ -46,6 +49,7 @@ module csr_regfile (
                 12'h305: mtvec   <= csr_wdata;
                 12'h341: mepc    <= csr_wdata;
                 12'h342: mcause  <= csr_wdata;
+                12'h343: mtval   <= csr_wdata;
 
                 default:                     ;
                 

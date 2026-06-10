@@ -21,3 +21,15 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - Integrated `csr_regfile.v` into `riscv_top.v`.
   - Updated register mux to include CSR writeback.
   - Completed a check using testbench in `tb/tb_csr_regfile.v`.
+
+## [0.2.1] - 2026-06-10
+
+### Added
+- Phase 1.2: CSR Support.
+  - Modified `rtl/core/main_decode.v` to build architecture for CSSR and CSSRI commands.
+  - Modified `rtl/core/csr_regfile.v` to include support for MTVAL.
+  - Updated `riscv_top.v` to reflect changes done.
+  - CSR write-enable logic is now complete.
+  - Verified using a comprehensive test in `tb/tb_csr.v`.
+  
+  - Left to add MCYCLE, MINSTRET, MIP, MIE, MISA, MSCRATCH [Unneeded till after trap architecture is done].

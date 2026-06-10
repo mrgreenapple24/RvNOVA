@@ -34,6 +34,7 @@ module riscv_top (
     wire        is_ecall;
     wire        is_ebreak;
     wire        csr_write;
+    wire [2:0]  csr_op;
 
     // Datapath Signals
     wire [31:0] rd1_data;
@@ -72,7 +73,7 @@ module riscv_top (
     main_decode control (
         .opcode     (instr_in[6:0]),
         .funct3     (instr_in[14:12]),
-        .funct12_b0 (instr_in[20]),
+        .funct12    (instr_in[31:20]),
         .reg_write  (reg_write),
         .alu_src    (alu_src),
         .mem_write  (mem_write_internal),
@@ -85,8 +86,25 @@ module riscv_top (
         .is_ecall   (is_ecall),
         .is_ebreak  (is_ebreak),                     // Leave unconnected. edit 1: connected...
         .csr_write  (csr_write),                     // Leave unconnected. edit 1: connected...
-        .jalr(jalr)
+        .jalr(jalr),
+        .csr_op(csr_op),
+        .csr_src(instr_in[19:15])
     );
+    
+    reg    [31:0] csr_wdata_int;
+    assign        csr_wdata = csr_wdata_int;
+
+    always @(*) begin
+        case (csr_op)
+            3'b001:  csr_wdata_int = rd1_data;                                  //CSRRW
+            3'b010:  csr_wdata_int = csr_rdata | rd1_data;                      //CSRRS
+            3'b011:  csr_wdata_int = csr_rdata & ~rd1_data;                     //CSRRC
+            3'b101:  csr_wdata_int = {27'b0, instr_in[19:15]};                  //CSRRWI
+            3'b110:  csr_wdata_int = csr_rdata | {27'b0, instr_in[19:15]};      //CSRRSI
+            3'b111:  csr_wdata_int = csr_rdata & ~{27'b0, instr_in[19:15]};     //CSRRCI
+            default: csr_wdata_int = 32'b0;
+        endcase
+    end
 
     alu_decode control_alu(
         .alu_op(alu_op),
@@ -127,12 +145,12 @@ module riscv_top (
         .clk        (clk),
         .reset      (rst_n),
         .we         (reg_write),
-        .rs1_addr        (instr_in[19:15]),
-        .rs2_addr        (instr_in[24:20]),
-        .rd_addr         (instr_in[11:7]),
-        .w_data      (write_data),
-        .rs1_data (rd1_data),
-        .rs2_data     (rd2_data)
+        .rs1_addr   (instr_in[19:15]),
+        .rs2_addr   (instr_in[24:20]),
+        .rd_addr    (instr_in[11:7]),
+        .w_data     (write_data),
+        .rs1_data   (rd1_data),
+        .rs2_data   (rd2_data)
     );
 
     // Immediate Generator
@@ -192,6 +210,5 @@ module riscv_top (
     );
 
     assign csr_addr = instr_in[31:20];
-    assign csr_wdata = rd1_data;
 
 endmodule
