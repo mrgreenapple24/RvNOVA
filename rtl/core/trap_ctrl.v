@@ -1,0 +1,90 @@
+module trap_ctrl (
+    input  wire [31:0] pc,                       //our current pc
+
+    input  wire        illegal_instr,
+    input  wire        ecall,
+    input  wire        ebreak,
+    input  wire        instr_misalign,
+    input  wire        load_misalign,
+    input  wire        store_misalign,           //all of these are exceptions that can occur
+
+    input  wire        ext_irq,                  //interrupt that can occur (maskable thru MIE)
+
+    input  wire [31:0] csr_mstatus,
+    input  wire [31:0] csr_mtvec,
+    input  wire [31:0] csr_mcause,
+    input  wire [31:0] csr_mtval,
+    input  wire [31:0] csr_mepc,                 //csr values
+
+    input  wire        csr_mret,                 //decoder SEES mret => control signal becomes 1
+
+    output wire        trap_taken,               //is a trap being executed (handled)
+    output wire        mret_taken,               //effectively the same as csr_mret for single-cycle. difference is that this becomes 1 when trap_ctrl accepts and starts executing mret op
+
+    output reg  [31:0] trap_target_pc,           //the pc that corresponds to trap_taken
+
+    output reg         csr_trap_we,              //write-enable
+
+    output reg  [31:0] trap_mepc,
+    output reg  [31:0] trap_mcause,
+    output reg  [31:0] trap_mtval,
+    output reg  [31:0] trap_mstatus
+);
+
+    wire   interrupt_pending;
+    assign interrupt_pending = ext_irq && csr_mstatus[3];          //the 4th bit of MSTATUS is MIE which is 1 if interrupts are unmasked and vice versa
+
+    assign trap_taken = illegal_instr || ecall || ebreak || instr_misalign || load_misalign || store_misalign || interrupt_pending;
+    assign mret_taken = csr_mret;
+    
+    always @(*) begin
+
+        csr_trap_we    = 0;
+        trap_mepc      = csr_mepc;
+        trap_mcause    = csr_mcause;
+        trap_mtval     = csr_mtval;
+        trap_mstatus   = csr_mstatus;
+        trap_target_pc = 32'b0;
+
+        if (trap_taken) begin 
+            
+            csr_trap_we     = 1;
+            trap_mepc       = pc;
+            trap_mstatus[7] = csr_mstatus[3];
+            trap_mstatus[3] = 1'b0;
+            trap_target_pc  = csr_mtvec;
+            
+            if (instr_misalign) begin
+                trap_mcause     = 32'h0;
+            end
+            else if (illegal_instr) begin
+                trap_mcause     = 32'h2;
+            end
+            else if (ebreak) begin
+                trap_mcause     = 32'h3;
+            end
+            else if (load_misalign) begin
+                trap_mcause     = 32'h4;
+            end
+            else if (store_misalign) begin
+                trap_mcause     = 32'h6;
+            end
+            else if (ecall) begin
+                trap_mcause     = 32'h8;
+            end
+            else if (interrupt_pending) begin
+                trap_mcause     = 32'h8000000B;
+            end
+        
+        end
+
+        else if (mret_taken) begin
+            csr_trap_we     = 1;
+            trap_target_pc  = csr_mepc;
+            trap_mstatus[3] = csr_mstatus[7];
+            trap_mstatus[7] = 1'b1;
+        end
+
+    end
+
+endmodule

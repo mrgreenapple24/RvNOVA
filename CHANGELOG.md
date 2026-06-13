@@ -32,4 +32,25 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - CSR write-enable logic is now complete.
   - Verified using a comprehensive test in `tb/tb_csr.v`.
   
-  - Left to add MCYCLE, MINSTRET, MIP, MIE, MISA, MSCRATCH [Unneeded till after trap architecture is done].
+### Left
+- Phase 1.2: CSR Support.
+  - MCYCLE, MINSTRET, MIP, MIE, MISA, MSCRATCH [Unneeded till after trap architecture is done].
+
+## [0.3.0] - 2026-06-12
+
+### Added
+- Phase 1.3: Exceptions and Interrupts
+  - Added `rtl/core/trap_ctrl.v` with support for 6 exceptions and external interrupt. COMBINATIONAL ONLY.
+  - Modified `rtl/core/csr_regfile.v` to add trap handling architecture.
+  - Updated `rtl/core/riscv_top.v`, `rtl/core/pc_mux.v` and `rtl/core/main_decode.v` to include wiring for trap execution.
+  - Support for masking/unmasking interrupts; MSTATUS updates to reflect saved and current value of interrupt enable.
+  - Note: Currently only Direct Mode of MTVEC is supported.
+
+### Left
+- Phase 1.2: CSR Support.
+  - MCYCLE, MINSTRET, MIP, MIE, MISA, MSCRATCH [Unneeded till after trap architecture is done].
+
+- Phase 1.3 Exceptions and Interrupts.
+  - Instruction Access Fault left unchecked for now.
+  - Testbench verification.
+  - MTVAL assignment based on type of exception handled.

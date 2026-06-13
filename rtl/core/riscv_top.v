@@ -35,6 +35,15 @@ module riscv_top (
     wire        is_ebreak;
     wire        csr_write;
     wire [2:0]  csr_op;
+    wire        csr_trap_we;
+    wire        illegal_instr;
+    wire        instr_misalign;
+    wire        load_misalign;
+    wire        store_misalign;
+    wire        trap_taken;
+    wire        mret_taken;
+    wire        csr_mret;
+    wire        ext_irq;
 
     // Datapath Signals
     wire [31:0] rd1_data;
@@ -49,6 +58,16 @@ module riscv_top (
     wire [11:0] csr_addr;
     wire [31:0] csr_rdata;
     wire [31:0] csr_wdata;
+    wire [31:0] csr_mstatus;
+    wire [31:0] csr_mcause;
+    wire [31:0] csr_mtval;
+    wire [31:0] csr_mtvec;
+    wire [31:0] csr_mepc;
+    wire [31:0] trap_mcause;
+    wire [31:0] trap_mepc;
+    wire [31:0] trap_mtval;
+    wire [31:0] trap_mstatus;
+    wire [31:0] trap_target_pc;
 
     // ========================================================================
     // Fetch Stage
@@ -88,6 +107,8 @@ module riscv_top (
         .csr_write  (csr_write),                     // Leave unconnected. edit 1: connected...
         .jalr(jalr),
         .csr_op(csr_op),
+        .csr_mret(csr_mret),
+        .ilgl_instr(illegal_instr),
         .csr_src(instr_in[19:15])
     );
     
@@ -193,9 +214,12 @@ module riscv_top (
         .funct3(instr_in[14:12]),
         .alu_result(alu_result),
         .alu_zero(alu_zero),
+        .mret_taken(mret_taken),
+        .trap_taken(trap_taken),
         .branch(branch),
         .jump(jump),
         .jalr(jalr),
+        .trap_target_pc(trap_target_pc),
         .pc_next(pc_next)
     );
 
@@ -206,9 +230,49 @@ module riscv_top (
         .csr_waddr(csr_addr),
         .csr_raddr(csr_addr),
         .csr_wdata(csr_wdata),
-        .csr_rdata(csr_rdata)
+        .csr_rdata(csr_rdata),
+        .csr_mstatus(csr_mstatus),
+        .csr_mepc(csr_mepc),
+        .csr_mtvec(csr_mtvec),
+        .csr_mtval(csr_mtval),
+        .csr_mcause(csr_mcause),
+        .trap_we(csr_trap_we),
+        .trap_mcause(trap_mcause),
+        .trap_mepc(trap_mepc),
+        .trap_mstatus(trap_mstatus),
+        .trap_mtval(trap_mtval)
     );
 
     assign csr_addr = instr_in[31:20];
+
+    trap_ctrl trap_ctrl (
+        .pc(pc_current),
+        .illegal_instr(illegal_instr),
+        .instr_misalign(instr_misalign),
+        .load_misalign(load_misalign),
+        .store_misalign(store_misalign),
+        .ecall(is_ecall),
+        .ebreak(is_ebreak),
+        .ext_irq(ext_irq),
+        .csr_mstatus(csr_mstatus),
+        .csr_mepc(csr_mepc),
+        .csr_mtvec(csr_mtvec),
+        .csr_mtval(csr_mtval),
+        .csr_mcause(csr_mcause),
+        .csr_mret(csr_mret),
+        .trap_taken(trap_taken),
+        .mret_taken(mret_taken),
+        .trap_target_pc(trap_target_pc),
+        .csr_trap_we(csr_trap_we),
+        .trap_mcause(trap_mcause),
+        .trap_mepc(trap_mepc),
+        .trap_mstatus(trap_mstatus),
+        .trap_mtval(trap_mtval)
+    );
+
+    assign ext_irq        = 1'b0;
+    assign instr_misalign = 1'b0;
+    assign store_misalign = misaligned_exc && mem_write_internal;
+    assign load_misalign  = misaligned_exc && data_re;
 
 endmodule

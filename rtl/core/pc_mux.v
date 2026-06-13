@@ -10,9 +10,13 @@ module pc_mux (
     input wire [2:0]  funct3,       // To distinguish branch types
     input wire [31:0] alu_result,   // For SLT/SLTU results
     input wire        alu_zero,     // For BEQ/BNE results
+    input wire        trap_taken,
+    input wire        mret_taken,
     input wire        branch,
     input wire        jump,
     input wire        jalr,         //jalr select
+
+    input wire [31:0] trap_target_pc,
 
     output reg [31:0] pc_next
 
@@ -41,7 +45,10 @@ module pc_mux (
 
     always @(*) begin
     
-        if (jump)
+        if (trap_taken || mret_taken)
+            pc_next = trap_target_pc;
+
+        else if (jump)
             pc_next = jump_targ;
     
         else if (branch && take_branch)

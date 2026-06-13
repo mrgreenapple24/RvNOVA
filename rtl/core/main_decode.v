@@ -17,7 +17,9 @@ module main_decode(
     output reg         is_ebreak,
     output reg         csr_write,
     output reg         jalr,
-    output wire [2:0]  csr_op
+    output wire [2:0]  csr_op,
+    output reg         csr_mret,
+    output reg         ilgl_instr
 );
 
 assign csr_op = funct3;
@@ -37,6 +39,8 @@ always @(*) begin
     is_ebreak  = 0;
     csr_write  = 0;
     jalr       = 0;
+    csr_mret   = 0;
+    ilgl_instr = 0;
 
     case (opcode[6:2])
 
@@ -108,6 +112,10 @@ always @(*) begin
                     is_ecall = 1;
                 else if (funct12 == 12'h001)
                     is_ebreak = 1;
+                else if (funct12 == 12'h302)
+                    csr_mret = 1;
+                else
+                    ilgl_instr = 1;
             end
             else begin
                 
@@ -122,14 +130,17 @@ always @(*) begin
                     3'b110:  csr_write = (csr_src != 5'd0); // CSRRSI
                     3'b111:  csr_write = (csr_src != 5'd0); // CSRRCI
                     
-                    default: csr_write = 0;
+                    default: begin
+                        csr_write  = 0;
+                        ilgl_instr = 1;
+                    end
                 endcase
 
             end
         end
 
         default: begin
-            // do nothing
+            ilgl_instr = 1;
         end
 
     endcase

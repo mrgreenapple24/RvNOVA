@@ -1,14 +1,25 @@
 module csr_regfile (
-    
-    input wire        clk,
-    input wire        rst_n,
+    input  wire        clk,
+    input  wire        rst_n,
 
-    input wire        csr_we,           //write enable
-    input wire [11:0] csr_waddr,        //write and read address defined separately for trap-handling.
-    input wire [11:0] csr_raddr,        //no difference between the two in this module
-    input wire [31:0] csr_wdata,
+    input  wire        csr_we,           //write enable
+    input  wire [11:0] csr_waddr,        //write and read address defined separately for trap-handling.
+    input  wire [11:0] csr_raddr,        //no difference between the two in this module
+    input  wire [31:0] csr_wdata,
 
-    output reg [31:0] csr_rdata
+    input  wire        trap_we,          //trap write-enable (higher priority than normal csrr instr)
+    input  wire [31:0] trap_mepc,
+    input  wire [31:0] trap_mstatus,
+    input  wire [31:0] trap_mtval,
+    input  wire [31:0] trap_mcause,
+
+    output reg  [31:0] csr_rdata,        //for normal csrr instr
+
+    output wire [31:0] csr_mstatus,
+    output wire [31:0] csr_mepc,
+    output wire [31:0] csr_mcause,
+    output wire [31:0] csr_mtvec,
+    output wire [31:0] csr_mtval        //for trap executions
 );
 
     reg [31:0] mstatus;
@@ -41,6 +52,13 @@ module csr_regfile (
             mtval   <= 32'b0;
         end
 
+        else if (trap_we) begin                             //higher priority than normal csr instr cuz exceptions and interrupts should be handled before an instruction is completed
+            mstatus <= trap_mstatus;
+            mepc    <= trap_mepc;
+            mcause  <= trap_mcause;
+            mtval   <= trap_mtval;
+        end
+
         else if (csr_we) begin
            
             case (csr_waddr)
@@ -58,5 +76,11 @@ module csr_regfile (
         end
     
     end
+
+    assign csr_mstatus = mstatus;
+    assign csr_mtvec   = mtvec;
+    assign csr_mepc    = mepc;
+    assign csr_mcause  = mcause;
+    assign csr_mtval   = mtval;
 
 endmodule
