@@ -12,12 +12,14 @@ module trap_ctrl (
     input  wire        load_misalign,
     input  wire        store_misalign,           //all of these are exceptions that can occur
 
-    input  wire        ext_irq,                  //interrupt that can occur (maskable thru MIE)
+    input  wire        ext_irq,                  //interrupt that can occur (maskable thru MIE). hardcoded to 0 for now since requires new input to top file
 
     input  wire [31:0] csr_mstatus,
     input  wire [31:0] csr_mtvec,
     input  wire [31:0] csr_mcause,
     input  wire [31:0] csr_mtval,
+    input  wire [31:0] csr_mie,
+    input  wire [31:0] csr_mip,
     input  wire [31:0] csr_mepc,                 //csr values
 
     input  wire        csr_mret,                 //decoder SEES mret => control signal becomes 1
@@ -36,10 +38,16 @@ module trap_ctrl (
 );
 
     wire   interrupt_pending;
-    assign interrupt_pending = ext_irq && csr_mstatus[3];          //the 4th bit of MSTATUS is MIE which is 1 if interrupts are unmasked and vice versa
+    assign interrupt_pending = ext_irq && csr_mie[11] && csr_mip[11] && csr_mstatus[3];          //the 4th bit of MSTATUS is master interrupt enable
 
     assign trap_taken = illegal_instr || ecall || ebreak || instr_misalign || load_misalign || store_misalign || interrupt_pending;
     assign mret_taken = csr_mret;
+
+    wire [1:0]  mtvec_mode;
+    wire [31:0] mtvec_base;
+
+    assign mtvec_mode = csr_mtvec[1:0];
+    assign mtvec_base = {csr_mtvec[31:2], 2'b00};
     
     always @(*) begin
 
@@ -56,7 +64,11 @@ module trap_ctrl (
             trap_mepc       = pc;
             trap_mstatus[7] = csr_mstatus[3];
             trap_mstatus[3] = 1'b0;
-            trap_target_pc  = csr_mtvec;
+
+            if (interrupt_pending && (mtvec_mode == 2'b01))         //mtvec vector mode only exists for interrupts. currently we support only one.
+                trap_target_pc = mtvec_base + 32'd44;               //BASE + 4*CAUSE.
+            else
+                trap_target_pc = mtvec_base;                        //if future interrupts are scaled, trap_target_pc can be assigned inside if else blocks
             
             if (instr_misalign) begin
                 trap_mcause     = 32'h0;

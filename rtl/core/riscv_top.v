@@ -44,6 +44,10 @@ module riscv_top (
     wire        mret_taken;
     wire        csr_mret;
     wire        ext_irq;
+    wire        instr_retired;
+    wire        csr_access;
+    wire        csr_ilgl_instr;
+    wire        decode_ilgl_instr;
 
     // Datapath Signals
     wire [31:0] rd1_data;
@@ -62,6 +66,12 @@ module riscv_top (
     wire [31:0] csr_mcause;
     wire [31:0] csr_mtval;
     wire [31:0] csr_mtvec;
+    wire [31:0] csr_misa;
+    wire [31:0] csr_mscratch;
+    wire [31:0] csr_mcycle;
+    wire [31:0] csr_minstret;
+    wire [31:0] csr_mie;
+    wire [31:0] csr_mip;
     wire [31:0] csr_mepc;
     wire [31:0] trap_mcause;
     wire [31:0] trap_mepc;
@@ -108,12 +118,13 @@ module riscv_top (
         .jalr(jalr),
         .csr_op(csr_op),
         .csr_mret(csr_mret),
-        .ilgl_instr(illegal_instr),
+        .decode_ilgl_instr(decode_ilgl_instr),
         .csr_src(instr_in[19:15])
     );
     
     reg    [31:0] csr_wdata_int;
     assign        csr_wdata = csr_wdata_int;
+    assign        illegal_instr = decode_ilgl_instr || csr_ilgl_instr;
 
     always @(*) begin
         case (csr_op)
@@ -226,6 +237,10 @@ module riscv_top (
     csr_regfile csr_reg (
         .clk(clk),
         .rst_n(rst_n),
+        .instr_retired(instr_retired),
+        .ext_irq(ext_irq),
+        .csr_access(csr_access),
+        .csr_ilgl_instr(csr_ilgl_instr),
         .csr_we(csr_write),
         .csr_waddr(csr_addr),
         .csr_raddr(csr_addr),
@@ -236,6 +251,12 @@ module riscv_top (
         .csr_mtvec(csr_mtvec),
         .csr_mtval(csr_mtval),
         .csr_mcause(csr_mcause),
+        .csr_misa(csr_misa),
+        .csr_mscratch(csr_mscratch),
+        .csr_mcycle(csr_mcycle),
+        .csr_minstret(csr_minstret),
+        .csr_mie(csr_mie),
+        .csr_mip(csr_mip),
         .trap_we(csr_trap_we),
         .trap_mcause(trap_mcause),
         .trap_mepc(trap_mepc),
@@ -244,6 +265,8 @@ module riscv_top (
     );
 
     assign csr_addr = instr_in[31:20];
+    assign csr_access = (csr_op != 3'b000);
+    assign instr_retired = !trap_taken && rst_n; //every cycle: instruction completes successfully or a trap occurs (basic implementation for single cycle)
 
     trap_ctrl trap_ctrl (
         .pc(pc_current),
@@ -261,6 +284,8 @@ module riscv_top (
         .csr_mtvec(csr_mtvec),
         .csr_mtval(csr_mtval),
         .csr_mcause(csr_mcause),
+        .csr_mie(csr_mie),
+        .csr_mip(csr_mip),
         .csr_mret(csr_mret),
         .trap_taken(trap_taken),
         .mret_taken(mret_taken),

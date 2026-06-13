@@ -1,3 +1,5 @@
+//OUTDATED AS OF THIS UPDATE
+
 `timescale 1ns/1ps
 
 module tb_trapexec;

@@ -1,3 +1,5 @@
+//OUTDATED AS OF THIS UPDATE (last one asw i think)
+
 `timescale 1ns/1ps
 
 module tb_csr_regfile;

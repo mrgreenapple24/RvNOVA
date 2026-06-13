@@ -19,7 +19,7 @@ module main_decode(
     output reg         jalr,
     output wire [2:0]  csr_op,
     output reg         csr_mret,
-    output reg         ilgl_instr
+    output reg         decode_ilgl_instr
 );
 
 assign csr_op = funct3;
@@ -40,7 +40,8 @@ always @(*) begin
     csr_write  = 0;
     jalr       = 0;
     csr_mret   = 0;
-    ilgl_instr = 0;
+    
+    decode_ilgl_instr = 0;
 
     case (opcode[6:2])
 
@@ -115,7 +116,7 @@ always @(*) begin
                 else if (funct12 == 12'h302)
                     csr_mret = 1;
                 else
-                    ilgl_instr = 1;
+                    decode_ilgl_instr = 1;
             end
             else begin
                 
@@ -132,7 +133,7 @@ always @(*) begin
                     
                     default: begin
                         csr_write  = 0;
-                        ilgl_instr = 1;
+                        decode_ilgl_instr = 1;
                     end
                 endcase
 
@@ -140,7 +141,7 @@ always @(*) begin
         end
 
         default: begin
-            ilgl_instr = 1;
+            decode_ilgl_instr = 1;
         end
 
     endcase
