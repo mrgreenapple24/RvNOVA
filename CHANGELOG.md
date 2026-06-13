@@ -54,3 +54,22 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - Instruction Access Fault left unchecked for now.
   - Testbench verification.
   - MTVAL assignment based on type of exception handled.
+
+## [0.3.1] - 2026-06-13
+
+### Added
+- Phase 1.3: Exceptions and Interrupts
+  - Updated `rtl/core/trap_ctrl.v` and `rtl/core/riscv_top.v` to update MTVAL registers.
+  - Faulty instruction and faulty address is now handed over to trap control.
+  - Added `tb/tb_trapexec.v` completely testing every trap execution and handling. PASSED SUCCESSFULLY.
+
+  - Note: Currently only Direct Mode of MTVEC is supported.
+  - Note: Currently RvNOVA only supports M-mode 
+
+### Left
+- Phase 1.2: CSR Support.
+  - MCYCLE, MINSTRET, MIP, MIE, MISA, MSCRATCH [Unneeded till after trap architecture is done].
+
+- Phase 1.3 Exceptions and Interrupts.
+  - Instruction Access Fault left unchecked for now [Memory Subsystem cannot report errors yet].
+  - System level testbench verification for trap handler.

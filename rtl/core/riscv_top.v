@@ -247,6 +247,8 @@ module riscv_top (
 
     trap_ctrl trap_ctrl (
         .pc(pc_current),
+        .fault_instr(instr_in[31:0]),
+        .fault_addr(alu_result),
         .illegal_instr(illegal_instr),
         .instr_misalign(instr_misalign),
         .load_misalign(load_misalign),

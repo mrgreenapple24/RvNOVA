@@ -1,5 +1,9 @@
+`timescale 1ns/1ps
+
 module trap_ctrl (
     input  wire [31:0] pc,                       //our current pc
+    input  wire [31:0] fault_instr,              //instruction
+    input  wire [31:0] fault_addr,
 
     input  wire        illegal_instr,
     input  wire        ecall,
@@ -42,7 +46,7 @@ module trap_ctrl (
         csr_trap_we    = 0;
         trap_mepc      = csr_mepc;
         trap_mcause    = csr_mcause;
-        trap_mtval     = csr_mtval;
+        trap_mtval     = 32'h0;
         trap_mstatus   = csr_mstatus;
         trap_target_pc = 32'b0;
 
@@ -56,24 +60,32 @@ module trap_ctrl (
             
             if (instr_misalign) begin
                 trap_mcause     = 32'h0;
+                trap_mtval      = pc;
             end
             else if (illegal_instr) begin
                 trap_mcause     = 32'h2;
+                trap_mtval      = fault_instr;
             end
             else if (ebreak) begin
                 trap_mcause     = 32'h3;
+                trap_mtval      = 0;
             end
             else if (load_misalign) begin
                 trap_mcause     = 32'h4;
+                trap_mtval      = fault_addr;
             end
             else if (store_misalign) begin
                 trap_mcause     = 32'h6;
+                trap_mtval      = fault_addr;
             end
             else if (ecall) begin
-                trap_mcause     = 32'h8;
+                trap_mcause     = 32'hB;
+                trap_mtval      = 0;
+
             end
             else if (interrupt_pending) begin
                 trap_mcause     = 32'h8000000B;
+                trap_mtval      = 0;
             end
         
         end
