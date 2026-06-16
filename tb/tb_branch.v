@@ -5,6 +5,7 @@ module tb_branch;
     integer i;
     reg clk;
     reg rst_n;
+    reg ext_irq;
 
     wire [31:0] pc_out;
     reg  [31:0] instr_in;
@@ -18,6 +19,7 @@ module tb_branch;
     riscv_top dut (
         .clk(clk),
         .rst_n(rst_n),
+        .ext_irq(ext_irq),
         .pc_out(pc_out),
         .instr_in(instr_in),
         .data_addr(data_addr),
@@ -46,6 +48,8 @@ module tb_branch;
     initial begin
         clk = 0;
         rst_n = 0;
+
+        ext_irq = 0;
 
         for (i = 0; i < 256; i = i + 1) begin
             instr_mem[i] = 32'h00000013; // NOP

@@ -5,6 +5,7 @@ module tb_integrated;
     integer i;
     reg clk;
     reg rst_n;
+    reg ext_irq;
 
     wire [31:0] pc_out;
     reg  [31:0] instr_in;
@@ -18,6 +19,7 @@ module tb_integrated;
     riscv_top dut (
         .clk(clk),
         .rst_n(rst_n),
+        .ext_irq(ext_irq),
         .pc_out(pc_out),
         .instr_in(instr_in),
         .data_addr(data_addr),
@@ -28,6 +30,8 @@ module tb_integrated;
     );
 
     always #5 clk = ~clk;
+
+    ext_irq = 0;
 
     reg [31:0] instr_mem [0:255];
     always @(*) instr_in = instr_mem[pc_out[9:2]];

@@ -2,6 +2,9 @@ module riscv_top (
     input  wire        clk,
     input  wire        rst_n,
 
+    //External Interrupts
+    input  wire        ext_irq,
+
     // Instruction Memory
     output wire [31:0] pc_out,
     input  wire [31:0] instr_in,
@@ -43,11 +46,12 @@ module riscv_top (
     wire        trap_taken;
     wire        mret_taken;
     wire        csr_mret;
-    wire        ext_irq;
     wire        instr_retired;
     wire        csr_access;
     wire        csr_ilgl_instr;
     wire        decode_ilgl_instr;
+    wire        is_wfi;
+    wire        interrupt_pending;
 
     // Datapath Signals
     wire [31:0] rd1_data;
@@ -79,6 +83,9 @@ module riscv_top (
     wire [31:0] trap_mstatus;
     wire [31:0] trap_target_pc;
 
+    //PROCESSOR STATUS
+    reg         sleeping;       //assigned in sequential block
+
     // ========================================================================
     // Fetch Stage
     // ========================================================================
@@ -87,6 +94,7 @@ module riscv_top (
     pc pc_unit (
         .clk(clk),
         .rst(rst_n),
+        .sleeping(sleeping),
         .pc_next(pc_next),
         .pc(pc_current)
     );
@@ -114,6 +122,7 @@ module riscv_top (
         .op1_src    (op1_src),
         .is_ecall   (is_ecall),
         .is_ebreak  (is_ebreak),                     // Leave unconnected. edit 1: connected...
+        .is_wfi     (is_wfi),
         .csr_write  (csr_write),                     // Leave unconnected. edit 1: connected...
         .jalr(jalr),
         .csr_op(csr_op),
@@ -136,6 +145,17 @@ module riscv_top (
             3'b111:  csr_wdata_int = csr_rdata & ~{27'b0, instr_in[19:15]};     //CSRRCI
             default: csr_wdata_int = 32'b0;
         endcase
+    end
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            sleeping <= 1'b0;
+        
+        else if (interrupt_pending)
+            sleeping <= 1'b0;
+            
+        else if (is_wfi)
+            sleeping <= 1'b1;
     end
 
     alu_decode control_alu(
@@ -266,7 +286,7 @@ module riscv_top (
 
     assign csr_addr = instr_in[31:20];
     assign csr_access = (csr_op != 3'b000);
-    assign instr_retired = !trap_taken && rst_n; //every cycle: instruction completes successfully or a trap occurs (basic implementation for single cycle)
+    assign instr_retired = !trap_taken && rst_n && !sleeping; //every cycle: instruction completes successfully or a trap occurs (basic implementation for single cycle)
 
     trap_ctrl trap_ctrl (
         .pc(pc_current),
@@ -289,6 +309,7 @@ module riscv_top (
         .csr_mret(csr_mret),
         .trap_taken(trap_taken),
         .mret_taken(mret_taken),
+        .interrupt_pending(interrupt_pending),
         .trap_target_pc(trap_target_pc),
         .csr_trap_we(csr_trap_we),
         .trap_mcause(trap_mcause),
@@ -297,7 +318,7 @@ module riscv_top (
         .trap_mtval(trap_mtval)
     );
 
-    assign ext_irq        = 1'b0;
+    // assign ext_irq        = 1'b0; //hardcoded till added as an input to top
     assign instr_misalign = 1'b0;
     assign store_misalign = misaligned_exc && mem_write_internal;
     assign load_misalign  = misaligned_exc && data_re;

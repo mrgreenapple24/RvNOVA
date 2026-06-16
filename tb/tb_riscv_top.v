@@ -6,6 +6,7 @@ module tb_riscv_top;
     // Clock + Reset
     reg clk;
     reg rst_n;
+    reg ext_irq;
 
     // Instruction Memory Interface
     wire [31:0] pc_out;
@@ -22,6 +23,7 @@ module tb_riscv_top;
     riscv_top dut (
         .clk(clk),
         .rst_n(rst_n),
+        .ext_irq(ext_irq),
 
         .pc_out(pc_out),
         .instr_in(instr_in),
@@ -85,6 +87,7 @@ module tb_riscv_top;
         // init signals
         clk = 0;
         rst_n = 0;
+        ext_irq = 0;
 
         // clear memories
         for (i = 0; i < 256; i = i + 1) begin

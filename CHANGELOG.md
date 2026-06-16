@@ -117,3 +117,15 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - Instruction Access Fault left unchecked for now [Memory Subsystem cannot report errors yet. To be tackled later].
   - System level testbench verification for trap handler [Better to be tackled in Phase 3].
   - For now, they will be left unchecked and not included in CHANGELOG updates till their inclusion.
+
+## [0.4.1] - 2026-06-17
+
+### Added
+- Phase 1.4: Missing Instructions Audit.
+  - FENCE, FENCE.I and WFI instruction opcodes are now recognized in `rtl/core/main_decode.v`.
+  - Both act as NOP instructions for our single-cycle implementation till now.
+  - WFI -> Wait for Interrupt logic added. Processor now halts till external hardware awakens it when WFI instruction is passed.
+  - External interrupts are now a recognized input to the top file. Thus, changes to multiple RTL files as well as all        testbenches utlizing an instance of the top file.
+  - Complete RV32I coverage audit complete. Check `docs/RISC32I_Audit.md`.
+
+  - Phase ONE is COMPLETE!

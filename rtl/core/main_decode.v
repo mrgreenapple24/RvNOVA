@@ -15,6 +15,7 @@ module main_decode(
     output reg         op1_src,      // 0 = rs1, 1 = PC
     output reg         is_ecall,
     output reg         is_ebreak,
+    output reg         is_wfi,
     output reg         csr_write,
     output reg         jalr,
     output wire [2:0]  csr_op,
@@ -40,6 +41,7 @@ always @(*) begin
     csr_write  = 0;
     jalr       = 0;
     csr_mret   = 0;
+    is_wfi     = 0;
     
     decode_ilgl_instr = 0;
 
@@ -107,6 +109,20 @@ always @(*) begin
             alu_op    = 3'b000;
         end
 
+        5'b00011: begin // FENCE
+            if (funct3 == 3'b000) begin
+                //FENCE
+                //NOP for single cycle implementation
+            end
+            else if (funct3 == 3'b001) begin
+                //FENCE.I
+                //NOP for single cycle implementation
+            end
+            else begin
+                decode_ilgl_instr = 1;
+            end
+        end
+
         5'b11100: begin // SYSTEM (ecall/ebreak/csr)
             if (funct3 == 3'b000) begin
                 if (funct12 == 12'h000)
@@ -115,6 +131,8 @@ always @(*) begin
                     is_ebreak = 1;
                 else if (funct12 == 12'h302)
                     csr_mret = 1;
+                else if (funct12 == 12'h105)
+                    is_wfi = 1;
                 else
                     decode_ilgl_instr = 1;
             end

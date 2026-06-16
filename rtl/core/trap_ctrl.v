@@ -25,6 +25,8 @@ module trap_ctrl (
     output wire        trap_taken,               //is a trap being executed (handled)
     output wire        mret_taken,               //effectively the same as csr_mret for single-cycle. difference is that this becomes 1 when trap_ctrl accepts and starts executing mret op
 
+    output wire        interrupt_pending,
+
     output reg  [31:0] trap_target_pc,           //the pc that corresponds to trap_taken
 
     output reg         csr_trap_we,              //write-enable
@@ -35,7 +37,6 @@ module trap_ctrl (
     output reg  [31:0] trap_mstatus
 );
 
-    wire   interrupt_pending;
     assign interrupt_pending = ext_irq && csr_mie[11] && csr_mip[11] && csr_mstatus[3];          //the 4th bit of MSTATUS is master interrupt enable
 
     assign trap_taken = illegal_instr || ecall || ebreak || instr_misalign || load_misalign || store_misalign || interrupt_pending;

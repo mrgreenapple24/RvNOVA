@@ -6,6 +6,7 @@ module tb_csr;
 
     reg clk;
     reg rst_n;
+    reg ext_irq;
 
     wire [31:0] pc_out;
     reg  [31:0] instr_in;
@@ -19,6 +20,7 @@ module tb_csr;
     riscv_top dut (
         .clk(clk),
         .rst_n(rst_n),
+        .ext_irq(ext_irq),
 
         .pc_out(pc_out),
         .instr_in(instr_in),
@@ -34,6 +36,8 @@ module tb_csr;
     // Clock
     // ============================================================
     always #5 clk = ~clk;
+
+    ext_irq = 0;
 
     // ============================================================
     // Instruction Memory (rom)
