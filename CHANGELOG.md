@@ -96,4 +96,24 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
 - Phase 1.3 Exceptions and Interrupts.
   - Instruction Access Fault left unchecked for now [Memory Subsystem cannot report errors yet].
   - System level testbench verification for trap handler.
-  - Testbench verification for MTVEC vectored mode. 
+  - Testbench verification for MTVEC vectored mode.
+
+## [0.3.3] - 2026-06-16
+
+### Added
+- Phase 1.2: CSR Support.
+  - Updated `tb/tb_csr_regfile.v` to reflect the new `rtl/core/csr_regfile.v` module and thoroughly verified all 11 CSRs.
+  - Succesfully checked whether illegal CSR write/read operations were being passed or not.
+
+- Phase 1.3: Exceptions and Interrupts.
+  - Updated `tb/tb_trapexec.v` to reflect the new `rtl/core/trap_ctrl.v` module.
+  - MTVEC Direct and Vector logic tested and verified.
+
+- Notes:
+  - RvNOVA currently only supports M-mode.
+
+## Left
+- Phase 1.3 Exceptions and Interrupts.
+  - Instruction Access Fault left unchecked for now [Memory Subsystem cannot report errors yet. To be tackled later].
+  - System level testbench verification for trap handler [Better to be tackled in Phase 3].
+  - For now, they will be left unchecked and not included in CHANGELOG updates till their inclusion.

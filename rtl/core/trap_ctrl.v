@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 module trap_ctrl (
     input  wire [31:0] pc,                       //our current pc
     input  wire [31:0] fault_instr,              //instruction

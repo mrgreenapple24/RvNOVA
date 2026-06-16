@@ -1,10 +1,6 @@
-//OUTDATED AS OF THIS UPDATE
-
 `timescale 1ns/1ps
 
 module tb_trapexec;
-
-    integer i;
 
     reg  [31:0] pc;                       //our current pc
     reg  [31:0] fault_addr;
@@ -23,6 +19,8 @@ module tb_trapexec;
     reg  [31:0] csr_mtvec;
     reg  [31:0] csr_mcause;
     reg  [31:0] csr_mtval;
+    reg  [31:0] csr_mip;
+    reg  [31:0] csr_mie;
     reg  [31:0] csr_mepc;                 //csr values
 
     reg         csr_mret;                 //decoder SEES mret => control signal becomes 1
@@ -74,6 +72,8 @@ module tb_trapexec;
         .csr_mtvec(csr_mtvec),
         .csr_mtval(csr_mtval),
         .csr_mcause(csr_mcause),
+        .csr_mie(csr_mie),
+        .csr_mip(csr_mip),
         .csr_mret(csr_mret),
         .trap_taken(trap_taken),
         .mret_taken(mret_taken),
@@ -103,6 +103,8 @@ module tb_trapexec;
         csr_mtvec      = 32'h00000100;
         csr_mepc       = 32'h0;
         csr_mtval      = 32'h0;
+        csr_mie        = 32'h0;
+        csr_mip        = 32'h0;
         csr_mret       = 0;
 
         // ========================================================================
@@ -214,13 +216,22 @@ module tb_trapexec;
         // test 6: ext irq/unmasked
         // ========================================================================
 
-        csr_mstatus = 32'h8;    //mie bit is set
-        ext_irq = 1;
+        csr_mstatus = 32'h8;     //mie bit is set
+        ext_irq     = 1;
+        csr_mie     = 32'h00000800;
+        csr_mip     = 32'h00000800; //mip is not connected to ex_irq in trap_ctrl.
+        csr_mtvec   = 32'h00000100;
         #1;
 
         check(trap_taken, "ext irq: interrupt unmasked, trap taken");
         check(trap_mcause == 32'h8000000B, "ext irq: mcause updated");
         check(trap_mtval == 32'h0, "ext irq: mtval update");
+        check(trap_target_pc == {csr_mtvec[31:2], 2'b00}, "direct mode working");
+
+        csr_mtvec = 32'h00000101;
+        #1;
+
+        check(trap_target_pc == {csr_mtvec[31:2], 2'b00} + 32'd44, "vector mode working");
 
         ext_irq = 0;
         #1;
