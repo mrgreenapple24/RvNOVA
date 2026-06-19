@@ -22,6 +22,7 @@ Memory: Harvard Architecture (Separate Instruction and Data memory)
 
 # **🛠 Project Structure**
 ```
+├── build.sh            # Automated build, waveform, and test suite script
 ├── rtl/core/           # Verilog source files
 │   ├── alu.v           # Arithmetic Logic Unit
 │   ├── alu_decode.v    # Decodes instr for alu
@@ -32,49 +33,46 @@ Memory: Harvard Architecture (Separate Instruction and Data memory)
 │   ├── regfile.v       # Register File
 │   └── riscv_top.v     # Top-level module
 ├── tb/                 # Testbenches
-│   ├── alu_tb.v        # Alu Testbench
-│   ├── immgen_tb.v     # Immediate Generator Test Bench
-│   ├── tb_regfile.v    # Test bench for regfile
-│   └── riscv_top.v     # Main system testbench
+│   ├── alu_tb.v        # ALU Testbench
+│   ├── immgen_tb.v     # Immediate Generator Testbench
+│   ├── tb_branch.v     # Branch Logic Testbench
+│   ├── tb_csr.v        # CSR Operations Testbench
+│   ├── tb_csr_regfile.v # CSR Register File Testbench
+│   ├── tb_integrated.v # Integrated System Testbench
+│   ├── tb_regfile.v    # Register File Testbench
+│   ├── tb_riscv_top.v  # Main System Testbench
+│   └── tb_trapexec.v   # Trap and Exception Execution Testbench
 ├── firmware/           # Assembly/C test programs
 └── docs/               # Architecture diagrams and specs
 ```
 
 # **💻 Getting Started**
 
-*Prerequisites*
+### Prerequisites
 To simulate this design, you will need:
+- **Icarus Verilog** (Simulation)
+- **GTKWave** (Waveform visualization)
 
-Icarus Verilog (Simulation)
-
-GTKWave (Waveform visualization)
-
-RISC-V GNU Toolchain (To compile assembly to machine code)
-
-Simulation Steps
-Clone the repo:
-
-```Bash
-git clone https://github.com/mrgreenapple24/RvNOVA.git
-cd riscv-verilog
+### Running Simulation & Waveforms
+To compile, simulate, and automatically open the CPU simulation waveform in GTKWave:
+```bash
+./build.sh
 ```
 
-Compile the Verilog files:
-
-
-```Bash
-iverilog -o processor_sim rtl/core/*.v tb/tb_riscv_top.v
+### Running the Test Suite
+To compile and run all 9 testbenches to verify CPU functionality:
+```bash
+./build.sh test
 ```
 
-Run the simulation:
-
-
-```Bash
-vvp processor_sim
+### Cleaning Up
+To remove all compiled binaries (`.out`) and waveform outputs (`.vcd`):
+```bash
+./build.sh clean
 ```
 
-View Waves:
-
-```Bash
-gtkwave dump.vcd
+### Command Help
+For details on available options:
+```bash
+./build.sh help
 ```

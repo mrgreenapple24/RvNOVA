@@ -12,7 +12,7 @@ module tb_branch;
 
     wire [31:0] data_addr;
     wire [31:0] data_wdata;
-    wire        data_we;
+    wire [3:0]  data_be;
     wire        data_re;
     reg  [31:0] data_rdata;
 
@@ -24,7 +24,7 @@ module tb_branch;
         .instr_in(instr_in),
         .data_addr(data_addr),
         .data_wdata(data_wdata),
-        .data_we(data_we),
+        .data_be(data_be),
         .data_re(data_re),
         .data_rdata(data_rdata)
     );
@@ -36,13 +36,13 @@ module tb_branch;
 
     reg [31:0] data_mem [0:255];
     always @(*) data_rdata = data_mem[data_addr[9:2]];
-    always @(posedge clk) if (data_we) data_mem[data_addr[9:2]] <= data_wdata;
+    always @(posedge clk) if (|data_be) data_mem[data_addr[9:2]] <= data_wdata;
 
     // Debug Monitor
     always @(posedge clk) begin
         if (rst_n)
-            $display("time=%0t PC=0x%08x INSTR=0x%08x WE=%b ADDR=0x%08x WDATA=0x%08x",
-                     $time, pc_out, instr_in, data_we, data_addr, data_wdata);
+            $display("time=%0t PC=0x%08x INSTR=0x%08x BE=%b ADDR=0x%08x WDATA=0x%08x",
+                     $time, pc_out, instr_in, data_be, data_addr, data_wdata);
     end
 
     initial begin
@@ -109,9 +109,9 @@ module tb_branch;
         $display("--- Branch Test Results ---");
         $display("x4 (BNE pass): %d (expected 1)", data_mem[0]);
         $display("x6 (BLT pass): %d (expected 1)", data_mem[1]);
-        $display("x7 (BGE fail-skip pass): %d (expected 1)", data_mem[2]);
-        $display("x3 (BEQ fail-taken): %d (expected 0)", data_mem[3]);
-        $display("x5 (BLT fail-taken): %d (expected 0)", data_mem[4]);
+        $display("x7 (BGE skip pass): %d (expected 1)", data_mem[2]);
+        $display("x3 (BEQ skip taken): %d (expected 0)", data_mem[3]);
+        $display("x5 (BLT skip taken): %d (expected 0)", data_mem[4]);
         
         if (data_mem[0] == 1 && data_mem[1] == 1 && data_mem[2] == 1 && data_mem[3] == 0 && data_mem[4] == 0)
             $display("BRANCH TEST PASSED!");

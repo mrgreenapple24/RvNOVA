@@ -37,8 +37,6 @@ module tb_csr;
     // ============================================================
     always #5 clk = ~clk;
 
-    ext_irq = 0;
-
     // ============================================================
     // Instruction Memory (rom)
     // ============================================================
@@ -92,6 +90,7 @@ module tb_csr;
         // init signals
         clk = 0;
         rst_n = 0;
+        ext_irq = 0;
 
         // clear memories
         for (i = 0; i < 256; i = i + 1) begin
@@ -162,28 +161,28 @@ module tb_csr;
         $display("x10   = %h", dut.rf.reg_array[10]);
 
         if (dut.rf.reg_array[2]  !== 32'h00000000)
-            $fatal("CSRRW FAILED");
+            $fatal(1, "CSRRW FAILED");
 
         if (dut.rf.reg_array[4]  !== 32'h00000005)
-            $fatal("CSRRS FAILED");
+            $fatal(1, "CSRRS FAILED");
 
         if (dut.rf.reg_array[6]  !== 32'h00000007)
-            $fatal("CSRRC FAILED");
+            $fatal(1, "CSRRC FAILED");
 
         if (dut.rf.reg_array[7]  !== 32'h00000006)
-            $fatal("CSRRWI FAILED");
+            $fatal(1, "CSRRWI FAILED");
 
         if (dut.rf.reg_array[8]  !== 32'h00000003)
-            $fatal("CSRRSI FAILED");
+            $fatal(1, "CSRRSI FAILED");
 
         if (dut.rf.reg_array[9]  !== 32'h0000000B)
-            $fatal("CSRRCI FAILED");
+            $fatal(1, "CSRRCI FAILED");
 
         if (dut.rf.reg_array[10] !== 32'h00000009)
-            $fatal("CSRRS READ-ONLY FAILED");
+            $fatal(1, "CSRRS READ-ONLY FAILED");
 
         if (dut.csr_reg.mtvec    !== 32'h00000009)
-            $fatal("FINAL MTVEC WRONG");
+            $fatal(1, "FINAL MTVEC WRONG");
 
         $display("ALL CSR TESTS PASSED");
 

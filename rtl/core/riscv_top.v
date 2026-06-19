@@ -285,7 +285,7 @@ module riscv_top (
     );
 
     assign csr_addr = instr_in[31:20];
-    assign csr_access = (csr_op != 3'b000);
+    assign csr_access = (instr_in[6:2] == 5'b11100) && (csr_op != 3'b000);
     assign instr_retired = !trap_taken && rst_n && !sleeping; //every cycle: instruction completes successfully or a trap occurs (basic implementation for single cycle)
 
     trap_ctrl trap_ctrl (

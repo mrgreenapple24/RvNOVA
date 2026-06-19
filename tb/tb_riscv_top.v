@@ -84,6 +84,9 @@ module tb_riscv_top;
     // Test Program Loader
     // ============================================================
     initial begin
+        $dumpfile("wave.vcd");
+        $dumpvars(0, tb_riscv_top);
+
         // init signals
         clk = 0;
         rst_n = 0;
@@ -143,6 +146,12 @@ module tb_riscv_top;
         $display("FINAL DATA MEM [2] = 0x%08x (expected 0x12345678)", data_mem[2]);
         $display("FINAL DATA MEM [3] = 0x%08x (expected 0x000000ff)", data_mem[3]);
         $display("--------------------------------------------------");
+
+        if (data_mem[1] == 32'h56780078 && data_mem[2] == 32'h12345678 && data_mem[3] == 32'h000000ff) begin
+            $display("RISCV_TOP TEST PASSED");
+        end else begin
+            $display("RISCV_TOP TEST FAILED");
+        end
 
         $finish;
     end

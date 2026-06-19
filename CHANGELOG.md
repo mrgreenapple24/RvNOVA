@@ -129,3 +129,15 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - Complete RV32I coverage audit complete. Check `docs/RISC32I_Audit.md`.
 
   - Phase ONE is COMPLETE!
+
+## [0.4.2] - 2026-06-19
+
+### Added
+- Created `build.sh` script to automate compilation, waveform simulation (`gtkwave`), and test execution.
+- Added `./build.sh test` to run all testbenches and verify pass/fail status.
+- Added `*.vcd` to `.gitignore`.
+
+### Fixed
+- Fixed critical hardware decoding bug in `rtl/core/riscv_top.v` where `csr_access` was erroneously active for non-SYSTEM instructions with non-zero funct3 bits (e.g. LUI, JAL), triggering false illegal instruction exceptions.
+- Added waveform dump instructions and self-checking assertions to `tb/tb_riscv_top.v`.
+- Fixed syntax/compilation issues in `tb/alu_tb.v`, `tb/tb_branch.v`, `tb/tb_csr.v`, `tb/tb_csr_regfile.v`, `tb/tb_integrated.v`, and `tb/tb_regfile.v` so that all 9 testbenches build and pass cleanly.

@@ -120,7 +120,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hDEADBEEF)
-                $fatal("MSTATUS FAILED");
+                $fatal(1, "MSTATUS FAILED");
 
         // ========================================================================
         // misa
@@ -133,7 +133,7 @@ module tb_csr_regfile;
         #20;
 
             if (!csr_ilgl_instr)
-                $fatal("MISA IS WRITABLE");
+                $fatal(1, "MISA IS WRITABLE");
 
         #10;
 
@@ -148,7 +148,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'h40000100)
-                $fatal("MISA FAILED");
+                $fatal(1, "MISA FAILED");
 
         // ========================================================================
         // mie
@@ -171,7 +171,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'h0F0F0F0F)
-                $fatal("MIE FAILED");
+                $fatal(1, "MIE FAILED");
         
         // ========================================================================
         // mtvec
@@ -194,7 +194,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'h11111111)
-                $fatal("MTVEC FAILED");
+                $fatal(1, "MTVEC FAILED");
 
         // ========================================================================
         // mscratch
@@ -217,7 +217,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hAAAAAAAA)
-                $fatal("MSCRATCH FAILED");
+                $fatal(1, "MSCRATCH FAILED");
 
         // ========================================================================
         // mepc
@@ -240,7 +240,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hFFFFFFFF)
-                $fatal("MEPC FAILED");
+                $fatal(1, "MEPC FAILED");
 
         // ========================================================================
         // mcause
@@ -263,7 +263,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hB00BB00B)
-                $fatal("MCAUSE FAILED");
+                $fatal(1, "MCAUSE FAILED");
 
         // ========================================================================
         // mtval
@@ -286,7 +286,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hDEADDEAD)
-                $fatal("MTVAL FAILED");
+                $fatal(1, "MTVAL FAILED");
 
         // ========================================================================
         // mip
@@ -299,7 +299,7 @@ module tb_csr_regfile;
         #20;
 
             if (!csr_ilgl_instr)
-                $fatal("mip is writable");
+                $fatal(1, "mip is writable");
 
         #10;
         
@@ -316,7 +316,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'h0)
-                $fatal("MIP FAILED");
+                $fatal(1, "MIP FAILED");
 
         #10;
 
@@ -333,7 +333,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'b00000000000000000000100000000000)
-                $fatal("MIP FAILED.2");
+                $fatal(1, "MIP FAILED.2");
 
         // ========================================================================
         // mcycle
@@ -366,7 +366,7 @@ module tb_csr_regfile;
         $display("mcycle = %h", csr_rdata); */
 
             if (csr_rdata != 32'hFFFF0000)
-                $fatal("MCYCLE FAILED");
+                $fatal(1, "MCYCLE FAILED");
 
         // ========================================================================
         // minsret
@@ -389,7 +389,7 @@ module tb_csr_regfile;
         #20;
 
             if (csr_rdata != 32'hDEADDEAD)
-                $fatal("MINSTRET FAILED");
+                $fatal(1, "MINSTRET FAILED");
 
         // ========================================================================
         // reset test

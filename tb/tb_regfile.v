@@ -11,20 +11,10 @@ module tb_regfile;
     reg [31:0] w_data;
     wire [31:0] rs1_data;
     wire [31:0] rs2_data;
+    reg ok;
 
     regfile uut (
         .clk(clk),
-        op1_src = 1;
-        reg_mux = 2'b10;
-        alu_op = 3'b000;
-    end
-    5'b11001: begin // JALR
-        jump = 1;
-        alu_src = 1;
-        reg_mux = 2'b10;
-        reg_write = 1;
-        alu_op = 3'b000;
-    end
         .reset(reset),
         .we(we),
         .rs1_addr(rs1_addr),
@@ -48,6 +38,7 @@ module tb_regfile;
         rs2_addr = 0;
         rd_addr = 0;
         w_data = 0;
+        ok = 1;
 
         #10 reset = 1;
         
@@ -60,8 +51,12 @@ module tb_regfile;
         
         rs1_addr = 5'd1;
         #1;
-        if (rs1_data == 32'hDEADBEEF) $display("PASS: x1 holds DEADBEEF");
-        else $display("FAIL: x1 = %h", rs1_data);
+        if (rs1_data == 32'hDEADBEEF) begin
+            $display("PASS: x1 holds DEADBEEF");
+        end else begin
+            $display("FAIL: x1 = %h", rs1_data);
+            ok = 0;
+        end
 
         $display("Test 3: Attempt to write 0xFFFFFFFF to x0");
         rd_addr = 5'd0;
@@ -72,8 +67,18 @@ module tb_regfile;
 
         rs1_addr = 5'd0;
         #1;
-        if (rs1_data == 32'h0) $display("PASS: x0 is still 0");
-        else $display("FAIL: x0 = %h", rs1_data);
+        if (rs1_data == 32'h0) begin
+            $display("PASS: x0 is still 0");
+        end else begin
+            $display("FAIL: x0 = %h", rs1_data);
+            ok = 0;
+        end
+
+        if (ok) begin
+            $display("REGFILE TEST PASSED");
+        end else begin
+            $display("REGFILE TEST FAILED");
+        end
 
         $finish;
     end

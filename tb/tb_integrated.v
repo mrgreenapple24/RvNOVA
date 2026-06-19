@@ -12,7 +12,7 @@ module tb_integrated;
 
     wire [31:0] data_addr;
     wire [31:0] data_wdata;
-    wire        data_we;
+    wire [3:0]  data_be;
     wire        data_re;
     reg  [31:0] data_rdata;
 
@@ -24,32 +24,31 @@ module tb_integrated;
         .instr_in(instr_in),
         .data_addr(data_addr),
         .data_wdata(data_wdata),
-        .data_we(data_we),
+        .data_be(data_be),
         .data_re(data_re),
         .data_rdata(data_rdata)
     );
 
     always #5 clk = ~clk;
 
-    ext_irq = 0;
-
     reg [31:0] instr_mem [0:255];
     always @(*) instr_in = instr_mem[pc_out[9:2]];
 
     reg [31:0] data_mem [0:255];
     always @(*) data_rdata = data_mem[data_addr[9:2]];
-    always @(posedge clk) if (data_we) data_mem[data_addr[9:2]] <= data_wdata;
+    always @(posedge clk) if (|data_be) data_mem[data_addr[9:2]] <= data_wdata;
 
     // Debug Monitor
     always @(posedge clk) begin
         if (rst_n)
-            $display("time=%0t PC=0x%08x INSTR=0x%08x WE=%b ADDR=0x%08x WDATA=0x%08x",
-                     $time, pc_out, instr_in, data_we, data_addr, data_wdata);
+            $display("time=%0t PC=0x%08x INSTR=0x%08x BE=%b ADDR=0x%08x WDATA=0x%08x",
+                     $time, pc_out, instr_in, data_be, data_addr, data_wdata);
     end
 
     initial begin
         clk = 0;
         rst_n = 0;
+        ext_irq = 0;
 
         for (i = 0; i < 256; i = i + 1) begin
             instr_mem[i] = 32'h00000013; // NOP

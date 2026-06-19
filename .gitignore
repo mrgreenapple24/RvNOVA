@@ -1,3 +1,4 @@
 *.out
 *_sim
 obj_dir/
+*.vcd
