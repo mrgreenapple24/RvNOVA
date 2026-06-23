@@ -141,3 +141,23 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
 - Fixed critical hardware decoding bug in `rtl/core/riscv_top.v` where `csr_access` was erroneously active for non-SYSTEM instructions with non-zero funct3 bits (e.g. LUI, JAL), triggering false illegal instruction exceptions.
 - Added waveform dump instructions and self-checking assertions to `tb/tb_riscv_top.v`.
 - Fixed syntax/compilation issues in `tb/alu_tb.v`, `tb/tb_branch.v`, `tb/tb_csr.v`, `tb/tb_csr_regfile.v`, `tb/tb_integrated.v`, and `tb/tb_regfile.v` so that all 9 testbenches build and pass cleanly.
+
+## [1.0.0] - 2026-06-23
+
+### Added
+- Phase 2: Firmware Toolchain
+  - `rtl/soc/*.v` created as peripherals to the CPU. Instruction and data memory need not be hard-coded into testbenches anymore instead all testbenches need to be updated to support reading from `build/firmware.hex`.
+  - Tested reading from `firmware.hex` and SoC function using testbench `tb/tb_rvnova_soc.v`.
+  - Created directory `firmware/` to store `main.c`, `startup.S` and `linker.ld` files.
+  - `build/` directory created for files built by running `firmware/` toolchain.
+  - Installed RISC-V GNU Toolchain (riscv64-unknown-elf-gcc) for firmware compilation, assembly, linking and image generation.
+  Required for firmware toolchain.
+  - Firmware build process automated through `Makefile`.
+  - Added a `converttohex.py` file to `scripts/` since hex instructions weren't readable to SoC in the format created by the toolchain.
+  - `test.S` are `test.o` not involved in the toolchain any longer.
+  - Current Flow: main.c -> main.S (Compiler) -> main.o (Assembler)
+                  startup.S -> startup.o (Assembler)
+                  main.o + startup.o + linker.ld -> firmware.elf
+                  firmware.elf -> firmware.mem (Objcopy)
+                  firmware.mem -> firmware.hex (converttohex.py)
+                  firmware.hex -> Read by SoC

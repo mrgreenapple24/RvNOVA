@@ -1,3 +1,5 @@
+//Has to be updated as of Patch 1.0.0
+
 `timescale 1ns/1ps
 
 module tb_csr;
