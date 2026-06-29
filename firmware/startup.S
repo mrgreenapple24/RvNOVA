@@ -19,3 +19,6 @@ _bss_done:
 
 _hang:
     j    _hang                 # Trap if main() returns
+
+# gp commented out for now since linker script doesn't define a global pointer and its unneeded at this phase (2)
+# .data also not being copied in linker script from ROM to RAM because unneeded as no gp.

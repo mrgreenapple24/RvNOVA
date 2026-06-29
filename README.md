@@ -1,78 +1,186 @@
 # RvNOVA
 
-RISC-V RV32I Core
-A single-cycle RISC-V processor implementation designed in Verilog HDL. This core is designed to be lightweight, modular, and compliant with the RV32I Base Integer Instruction Set.
+## RISC-V RV32I Core
 
-# **🚀 Features**
-ISA: RISC-V RV32I (Base Integer Instruction Set).
+A lightweight bare-metal RISC-V SoC featuring a modular single-cycle RV32I processor written in Verilog HDL. RvNOVA is designed with clean module separation, privileged architecture support, firmware execution, and comprehensive verification while remaining easy to understand and extend.
 
-Architecture: [Single-cycle].
+---
 
-Modules: * Arithmetic Logic Unit (ALU)
+# 🚀 Features
 
-Control Unit
+* **ISA:** RISC-V RV32I (Base Integer Instruction Set)
+* **Architecture:** Single-cycle Harvard Architecture
+* **Privilege Support:** Machine Mode (M-Mode)
+* **Firmware Support:** Bare-metal C and Assembly
+* **Verification:** Dedicated unit and integration testbenches
 
-Register File (32 registers)
+### Implemented Features
 
-Immediate Generator
+* Complete RV32I Base Integer ISA
+* ALU with arithmetic, logical and shift operations
+* Register File (32 × 32-bit)
+* Immediate Generator
+* Branch and Jump Logic
+* Load / Store Unit with byte enables
+* CSR Subsystem
+* Trap Controller
+* ECALL / EBREAK
+* MRET
+* WFI
+* Illegal Instruction Detection
+* Illegal CSR Access Detection
+* Machine External Interrupt Support
+* Bare-metal Firmware Toolchain
 
-Program Counter (PC)
+---
 
-Memory: Harvard Architecture (Separate Instruction and Data memory)
+# 🏗 Architecture
 
-# **🛠 Project Structure**
-```
-├── build.sh            # Automated build, waveform, and test suite script
-├── rtl/core/           # Verilog source files
-│   ├── alu.v           # Arithmetic Logic Unit
-│   ├── alu_decode.v    # Decodes instr for alu
-│   ├── imm_gen.v       # Generates Immediates
-│   ├── main_decode.v   # Decodes instr for alu_decoder
-│   ├── pc.v            # program counter logic
-│   ├── pc_mux.v        # mux for program counter
-│   ├── regfile.v       # Register File
-│   └── riscv_top.v     # Top-level module
-├── tb/                 # Testbenches
-│   ├── alu_tb.v        # ALU Testbench
-│   ├── immgen_tb.v     # Immediate Generator Testbench
-│   ├── tb_branch.v     # Branch Logic Testbench
-│   ├── tb_csr.v        # CSR Operations Testbench
-│   ├── tb_csr_regfile.v # CSR Register File Testbench
-│   ├── tb_integrated.v # Integrated System Testbench
-│   ├── tb_regfile.v    # Register File Testbench
-│   ├── tb_riscv_top.v  # Main System Testbench
-│   └── tb_trapexec.v   # Trap and Exception Execution Testbench
-├── firmware/           # Assembly/C test programs
-└── docs/               # Architecture diagrams and specs
-```
+RvNOVA is organized into three major components:
 
-# **💻 Getting Started**
+Firmware
+    │
+    ▼
+Instruction Memory
+    │
+    ▼
++----------------------+
+|      RV32I Core      |
+|                      |
+|  Fetch               |
+|  Decode              |
+|  Execute             |
+|  Memory              |
+|  Writeback           |
+|  Trap Controller     |
+|  CSR Subsystem       |
++----------------------+
+    │
+    ▼
+Data Memory
 
-### Prerequisites
-To simulate this design, you will need:
-- **Icarus Verilog** (Simulation)
-- **GTKWave** (Waveform visualization)
+The processor follows a Harvard architecture with separate instruction and data memories wrapped inside a lightweight SoC.
 
-### Running Simulation & Waveforms
-To compile, simulate, and automatically open the CPU simulation waveform in GTKWave:
+---
+
+# 📁 Project Structure
+
+RvNOVA/
+├── rtl/
+│   ├── core/
+│   │   ├── alu.v
+│   │   ├── alu_decode.v
+│   │   ├── csr_regfile.v
+│   │   ├── imm_gen.v
+│   │   ├── load_store_unit.v
+│   │   ├── main_decode.v
+│   │   ├── pc.v
+│   │   ├── pc_mux.v
+│   │   ├── regfile.v
+│   │   ├── riscv_top.v
+│   │   └── trap_ctrl.v
+│   │
+│   └── soc/
+│       ├── data_mem.v
+│       ├── instr_mem.v
+│       └── rvnova_soc.v
+│
+├── firmware/
+│   ├── startup.S
+│   ├── main.c
+│   ├── linker.ld
+│   └── test.S
+│
+├── tb/
+│   ├── tb_alu.v
+│   ├── tb_csr_regfile.v
+│   ├── tb_imm_gen.v
+│   ├── tb_load_store.v
+│   ├── tb_regfile.v
+│   ├── tb_riscv_top.v
+│   ├── tb_trapexec.v
+│   └── ...
+│
+├── scripts/
+│   ├── build.sh
+│   └── converttohex.py
+│
+├── build/
+│   ├── firmware.elf
+│   ├── firmware.hex
+│   ├── firmware.mem
+│   └── ...
+│
+├── README.md
+├── PLAN.md
+├── CHANGELOG.md
+└── Makefile
+
+---
+
+# 💻 Getting Started
+
+## Prerequisites
+
+Install:
+
+* Icarus Verilog
+* GTKWave
+* RISC-V GNU Toolchain (`riscv32-unknown-elf-gcc`)
+
+---
+
+## Build Firmware
+
 ```bash
-./build.sh
+make firmware
 ```
 
-### Running the Test Suite
-To compile and run all 9 testbenches to verify CPU functionality:
+Compiles the firmware and generates the Verilog-compatible memory image.
+
+---
+
+## Simulate the SoC
+
 ```bash
-./build.sh test
+make
 ```
 
-### Cleaning Up
-To remove all compiled binaries (`.out`) and waveform outputs (`.vcd`):
+Builds the processor, loads the firmware and runs the simulation.
+
+---
+
+## Run Testbenches
+
 ```bash
-./build.sh clean
+./scripts/build.sh test
 ```
 
-### Command Help
-For details on available options:
+Runs the complete verification suite.
+
+---
+
+## Clean Build Files
+
 ```bash
-./build.sh help
+make clean
 ```
+
+---
+
+# 🧪 Verification
+
+RvNOVA includes dedicated verification for major subsystems including:
+
+* ALU
+* Register File
+* Immediate Generator
+* Load / Store Unit
+* CSR Register File
+* Trap Controller
+* Top-Level Integration
+* Firmware Execution
+
+---
+
+RvNOVA is an educational processor project focused on clean RTL design, modular architecture and progressive implementation of the RISC-V ISA.

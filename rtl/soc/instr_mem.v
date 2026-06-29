@@ -7,8 +7,6 @@ module instr_mem (
 
     initial begin
 
-        $readmemh("build/firmware.hex", mem);
-
         $display("Loading firmware...");
         $readmemh("build/firmware.hex", mem);
 
