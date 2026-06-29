@@ -161,3 +161,12 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
                   firmware.elf -> firmware.mem (Objcopy)
                   firmware.mem -> firmware.hex (converttohex.py)
                   firmware.hex -> Read by SoC
+
+## [1.0.1] - 2026-06-29
+
+### Added
+- `README.md` upgraded to fit current implementation.
+- `firmware/starup.S` documentation updated.
+
+### Fixed
+- `rtl/soc/data_mem.v` and `rtl/soc/instr_mem.v` had minor issues which were fixed.
