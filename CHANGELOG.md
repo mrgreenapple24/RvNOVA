@@ -170,3 +170,13 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
 
 ### Fixed
 - `rtl/soc/data_mem.v` and `rtl/soc/instr_mem.v` had minor issues which were fixed.
+
+## [2.0.0] - 2026-06-30
+
+### Added
+- Phase 3: Verification and Compliance,
+  - `tb/` changed to `sim/`.
+  - Testbenches separated by the DUT they use inside `sim/` directory.
+  - `firmware/` files shifted to sub-directory `firmware/core/`.
+  - `firmware/testbenches/` created for software-driven tests.
+  - `sim/unit DUTs/tb_lsu.v` and `sim/unit DUTs/tb_pc.v` added as individual unit tests for the `rtl/core/load_store_unit.v` and `rtl/core/pc_mux.v` modules respectively.
