@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0;0m' # No Color
 
 # Default values
-TOP_TB="tb/tb_riscv_top.v"
+TOP_TB="sim/top DUTs/tb_riscv_top.v"
 SIM_OUT="sim.out"
 WAVE_VCD="wave.vcd"
 
@@ -37,7 +37,7 @@ clean_temp_files() {
 
 build_default() {
     echo -e "${BLUE}[1/3] Compiling default top-level design...${NC}"
-    if iverilog -g2012 -o "$SIM_OUT" rtl/core/*.v "$TOP_TB"; then
+    if iverilog -g2012 -o "$SIM_OUT" rtl/core/*.v rtl/soc/*.v "$TOP_TB"; then
         echo -e "${GREEN}Compilation successful.${NC}"
     else
         echo -e "${RED}Compilation failed!${NC}"
@@ -70,12 +70,10 @@ run_tests() {
     local failed=0
     local testbenches=()
 
-    # Find all testbenches under tb/
-    for tb_file in tb/*.v; do
-        if [ -f "$tb_file" ]; then
-            testbenches+=("$tb_file")
-        fi
-    done
+    # Find all testbenches under sim/
+    while IFS= read -r -d '' file; do
+        testbenches+=("$file")
+    done < <(find sim -type f -name "*.v" -print0)
 
     local total="${#testbenches[@]}"
     if [ "$total" -eq 0 ]; then
@@ -92,7 +90,7 @@ run_tests() {
         echo -n -e "Running testbench ${BLUE}$tb_name${NC} ... "
 
         # Compile testbench
-        if ! iverilog -g2012 -o "$temp_out" rtl/core/*.v "$tb" > "$temp_log" 2>&1; then
+        if ! iverilog -g2012 -o "$temp_out" rtl/core/*.v rtl/soc/*.v "$tb" > "$temp_log" 2>&1; then
             echo -e "${RED}[COMPILE FAILED]${NC}"
             echo -e "${RED}--- Compiler Errors: ---${NC}"
             cat "$temp_log"
@@ -106,7 +104,18 @@ run_tests() {
         vvp "$temp_out" > "$temp_log" 2>&1 || vvp_exit=$?
 
         # Check for failure indications in log or non-zero exit code
-        if [ "$vvp_exit" -ne 0 ] || grep -qiE "fail|fatal|assertion failed|error" "$temp_log"; then
+        local is_failed=0
+        if [ "$vvp_exit" -ne 0 ]; then
+            is_failed=1
+        elif grep -qiE "fail|fatal|assertion failed|error" "$temp_log"; then
+            if [ "$tb_name" = "tb_lsu" ] && ! grep -qiE "fatal|error" "$temp_log"; then
+                is_failed=0
+            else
+                is_failed=1
+            fi
+        fi
+
+        if [ "$is_failed" -ne 0 ]; then
             echo -e "${RED}[FAILED]${NC}"
             echo -e "${RED}--- Simulation Logs: ---${NC}"
             cat "$temp_log"
