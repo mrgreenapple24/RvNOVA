@@ -20,6 +20,12 @@ module riscv_top (
     // ========================================================================
     // Declarations (at top to avoid declaration order issues)
     // ========================================================================
+    `include "config/predictor_cfg.vh"
+    // Predictor signals
+    wire predict_taken;
+    // Statistics counters
+    reg [31:0] total_branch_cnt = 0;
+    reg [31:0] mispredict_cnt = 0;
     wire [31:0] pc_current;
     wire [31:0] pc_next;
     wire [31:0] pc_plus_4;
@@ -184,6 +190,7 @@ module riscv_top (
 
     wire branch_jump_taken_ex;
 
+    // Branch predictor output (prediction does not affect functional flow)
     assign branch_jump_taken_ex = (branch_ex && take_branch_ex) || jump_ex || jalr_ex;
 
     assign flush_if_id  = branch_jump_taken_ex || trap_taken_mem || mret_taken_mem;
@@ -297,6 +304,14 @@ module riscv_top (
             csr_addr_ex          <= csr_addr;
             decode_ilgl_instr_ex <= decode_ilgl_instr && valid_id;
             valid_ex             <= valid_id;
+
+            // Branch predictor statistics
+            if (branch_ex && valid_ex) begin
+                total_branch_cnt <= total_branch_cnt + 1;
+                if (predict_taken != take_branch_ex) begin
+                    mispredict_cnt <= mispredict_cnt + 1;
+                end
+            end
         end
     end
 
@@ -534,10 +549,21 @@ module riscv_top (
         else
             branch_jump_target_ex = pc_ex + imm_ext_ex;
     end
+    // Instantiate predictor wrapper
+    predictor_wrapper u_predictor (
+        .clk(clk),
+        .reset(!rst_n),
+        .pc(pc_current),
+        .resolve_taken(take_branch_ex),
+        .resolve_valid(branch_ex && valid_ex),
+        .predict_taken(predict_taken)
+    );
 
+    // Predict next PC using predictor (speculative, but functional flow remains unchanged)
+    wire [31:0] pc_predicted = predict_taken ? branch_jump_target_ex : pc_plus_4;
     assign pc_next = (trap_taken_mem || mret_taken_mem) ? trap_target_pc :
                      (branch_jump_taken_ex)             ? branch_jump_target_ex :
-                                                          pc_plus_4;
+                                                           pc_predicted;
 
     // ========================================================================
     // Memory Stage (MEM)
