@@ -32,6 +32,14 @@ module tb_csr;
         .data_rdata(data_rdata)
     );
 
+    // Branch predictor testbench monitor
+    branch_predictor_tb bp (
+        .clk(clk),
+        .rst_n(rst_n),
+        .pc(pc_out),
+        .instr(instr_in)
+    );
+
     // ============================================================
     // Clock
     // ============================================================
@@ -185,6 +193,9 @@ module tb_csr;
             $fatal(1, "FINAL MTVEC WRONG");
 
         $display("ALL CSR TESTS PASSED");
+        
+        // Print branch predictor report
+        bp.report();
 
         $finish;
     end
