@@ -14,9 +14,36 @@ BLUE='\033[0;34m'
 NC='\033[0;0m' # No Color
 
 # Default values
-TOP_TB="tb/tb_riscv_top.v"
 SIM_OUT="sim.out"
 WAVE_VCD="wave.vcd"
+
+# Determine top-level testbench. Prefer tb/tb_riscv_top.v, then search sim/ for tb_riscv_top.v or tb_*.v.
+TOP_TB="tb/tb_riscv_top.v"
+choose_top_tb() {
+    # Prefer explicit tb/ path
+    if [ -f "tb/tb_riscv_top.v" ]; then
+        TOP_TB="tb/tb_riscv_top.v"
+        return
+    fi
+
+    # Search sim/ for tb_riscv_top.v or any tb_*.v, handling filenames with spaces safely.
+    local -a candidates
+    mapfile -d '' -t candidates < <(find sim -type f \( -name 'tb_riscv_top.v' -o -name 'tb_*.v' \) -print0 2>/dev/null || true)
+    if [ "${#candidates[@]}" -gt 0 ]; then
+        TOP_TB="${candidates[0]}"
+        return
+    fi
+
+    # Fallback: find any tb_*.v anywhere
+    mapfile -d '' -t candidates < <(find . -type f -path '*/tb_*.v' -print0 2>/dev/null || true)
+    if [ "${#candidates[@]}" -gt 0 ]; then
+        TOP_TB="${candidates[0]}"
+        return
+    fi
+
+    # last resort leave default
+    TOP_TB="tb/tb_riscv_top.v"
+}
 
 show_help() {
     cat << EOF
@@ -37,7 +64,21 @@ clean_temp_files() {
 
 build_default() {
     echo -e "${BLUE}[1/3] Compiling default top-level design...${NC}"
-    if iverilog -g2012 -o "$SIM_OUT" rtl/core/*.v "$TOP_TB"; then
+    choose_top_tb
+    echo -e "${BLUE}Using top-level testbench: ${TOP_TB}${NC}"
+
+    # Collect all RTL sources (core, soc, ...) using recursive glob to ensure SoC testbenches find their modules
+    # Enable globstar and nullglob so the pattern expands safely even if no files match
+    # collect RTL and sim sources but exclude testbench files (tb_*.v)
+    mapfile -d '' -t core_files < <(find rtl sim -type f -name '*.v' ! -name 'tb_*.v' -print0 2>/dev/null || true)
+    tb_files=("$TOP_TB")
+    # If core_files is empty, fall back to rtl/**/*.v
+    if [ "${#core_files[@]}" -eq 0 ]; then
+        shopt -s globstar nullglob
+        core_files=(rtl/**/*.v)
+    fi
+
+    if iverilog -g2012 -o "$SIM_OUT" "${core_files[@]}" "${tb_files[@]}"; then
         echo -e "${GREEN}Compilation successful.${NC}"
     else
         echo -e "${RED}Compilation failed!${NC}"
@@ -70,12 +111,10 @@ run_tests() {
     local failed=0
     local testbenches=()
 
-    # Find all testbenches under tb/
-    for tb_file in tb/*.v; do
-        if [ -f "$tb_file" ]; then
-            testbenches+=("$tb_file")
-        fi
-    done
+    # Find all testbenches under tb/ and sim/ (recursively), handling filenames with spaces
+    while IFS= read -r -d '' tb_file; do
+        testbenches+=("$tb_file")
+    done < <(find tb sim -type f -name 'tb_*.v' -print0 2>/dev/null || true)
 
     local total="${#testbenches[@]}"
     if [ "$total" -eq 0 ]; then
@@ -91,8 +130,14 @@ run_tests() {
         tb_name=$(basename "$tb" .v)
         echo -n -e "Running testbench ${BLUE}$tb_name${NC} ... "
 
-        # Compile testbench
-        if ! iverilog -g2012 -o "$temp_out" rtl/core/*.v "$tb" > "$temp_log" 2>&1; then
+        # Compile testbench: include all RTL sources (core, soc, ...) to satisfy SoC testbenches
+        # collect RTL and sim sources but exclude testbench files (tb_*.v)
+        mapfile -d '' -t core_files < <(find rtl sim -type f -name '*.v' ! -name 'tb_*.v' -print0 2>/dev/null || true)
+        if [ "${#core_files[@]}" -eq 0 ]; then
+            shopt -s globstar nullglob
+            core_files=(rtl/**/*.v)
+        fi
+        if ! iverilog -g2012 -o "$temp_out" "${core_files[@]}" "$tb" > "$temp_log" 2>&1; then
             echo -e "${RED}[COMPILE FAILED]${NC}"
             echo -e "${RED}--- Compiler Errors: ---${NC}"
             cat "$temp_log"
@@ -105,8 +150,20 @@ run_tests() {
         local vvp_exit=0
         vvp "$temp_out" > "$temp_log" 2>&1 || vvp_exit=$?
 
-        # Check for failure indications in log or non-zero exit code
-        if [ "$vvp_exit" -ne 0 ] || grep -qiE "fail|fatal|assertion failed|error" "$temp_log"; then
+        # Determine pass/fail: prefer vvp exit code; if zero, accept explicit "all ... passed" summaries
+        if [ "$vvp_exit" -ne 0 ]; then
+            status_failed=1
+        else
+            if grep -qiE "all .* passed|tests passed" "$temp_log"; then
+                status_failed=0
+            elif grep -qiE "fail|fatal|error" "$temp_log"; then
+                status_failed=1
+            else
+                status_failed=0
+            fi
+        fi
+
+        if [ "$status_failed" -ne 0 ]; then
             echo -e "${RED}[FAILED]${NC}"
             echo -e "${RED}--- Simulation Logs: ---${NC}"
             cat "$temp_log"

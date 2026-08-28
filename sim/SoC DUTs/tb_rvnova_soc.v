@@ -10,6 +10,14 @@ module tb_rvnova_soc;
         .rst_n(rst_n)
     );
 
+    // Branch predictor monitor attached to the SoC CPU signals
+    branch_predictor_tb bp_soc (
+        .clk(clk),
+        .rst_n(rst_n),
+        .pc(dut.cpu.pc_out),
+        .instr(dut.cpu.instr_in)
+    );
+
     always #5 clk = ~clk;
 
     initial begin
@@ -24,6 +32,9 @@ module tb_rvnova_soc;
         $display("x1 = %0d", dut.cpu.rf.reg_array[1]);
         $display("x2 = %0d", dut.cpu.rf.reg_array[2]);
         $display("x3 = %0d", dut.cpu.rf.reg_array[3]);
+
+        // Print predictor report for SoC run
+        bp_soc.report();
 
         $finish;
     end
