@@ -35,6 +35,14 @@ module tb_riscv_top;
         .data_rdata(data_rdata)
     );
 
+    // Branch predictor testbench monitor (collects predictions and misprediction stats)
+    branch_predictor_tb bp (
+        .clk(clk),
+        .rst_n(rst_n),
+        .pc(pc_out),
+        .instr(instr_in)
+    );
+
     // ============================================================
     // Clock Generation (100 MHz -> 10ns period)
     // ============================================================
@@ -152,6 +160,9 @@ module tb_riscv_top;
         end else begin
             $display("RISCV_TOP TEST FAILED");
         end
+
+        // Print branch predictor report
+        bp.report();
 
         $finish;
     end
