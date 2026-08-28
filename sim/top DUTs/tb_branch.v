@@ -29,6 +29,14 @@ module tb_branch;
         .data_rdata(data_rdata)
     );
 
+    // Branch predictor testbench monitor
+    branch_predictor_tb bp (
+        .clk(clk),
+        .rst_n(rst_n),
+        .pc(pc_out),
+        .instr(instr_in)
+    );
+
     always #5 clk = ~clk;
 
     reg [31:0] instr_mem [0:255];
@@ -118,6 +126,9 @@ module tb_branch;
         else
             $display("BRANCH TEST FAILED!");
         
+        // Print branch predictor report
+        bp.report();
+
         $finish;
     end
 
