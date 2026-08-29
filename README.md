@@ -198,3 +198,16 @@ RvNOVA includes dedicated verification for major subsystems including:
 ---
 
 RvNOVA is an educational processor project focused on clean RTL design, modular architecture and progressive implementation of the RISC-V ISA.
+
+## Branch predictor analysis
+
+A new analysis tool (branch_predictor.py) was added to evaluate branch predictors using either synthetic traces or by parsing the hardware testbench report produced by the project's `branch_predictor_tb` Verilog module. Usage examples:
+
+- Synthetic traces: `python3 branch_predictor.py --trials 20 --branches 1000 --seed 123`
+- Hardware integration (requires Icarus Verilog): `python3 branch_predictor.py --verilog --tb "sim/top DUTs/tb_branch.v" --mispred-penalty 3`
+
+The tool parses the Verilog report to extract cycle counts and misprediction stats, then computes estimated effective cycles by adding a configurable penalty per misprediction. This lets you compare predictors by estimated timing impact on the existing pipelined CPU testbench.
+
+### Latest hardware analysis
+
+Branches: 4, Cycles: 50, Mispred penalty: 3 cycles
