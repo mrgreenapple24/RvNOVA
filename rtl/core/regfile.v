@@ -25,7 +25,7 @@ always @(posedge clk) begin
     end
 end
 
-assign rs1_data = reg_array[rs1_addr];
-assign rs2_data = reg_array[rs2_addr];
+assign rs1_data = (we && (rd_addr == rs1_addr) && (rd_addr != 5'b00000)) ? w_data : reg_array[rs1_addr];
+assign rs2_data = (we && (rd_addr == rs2_addr) && (rd_addr != 5'b00000)) ? w_data : reg_array[rs2_addr];
 
 endmodule

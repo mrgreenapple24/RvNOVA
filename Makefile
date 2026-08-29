@@ -10,7 +10,7 @@ TOP      = tb_riscv_top
 OUT      = sim.out
 VCD      = wave.vcd
 
-SRC      = rtl/core/*.v tb/tb_riscv_top.v
+SRC      = rtl/core/*.v rtl/predictor/*.v rtl/config/*.v tb/tb_riscv_top.v tb/predictor_tb.v
 
 all: run
 
@@ -26,7 +26,21 @@ wave: run
 clean:
 	rm -f $(OUT) $(VCD)
 
-.PHONY: all compile run wave clean
+branch_compare:
+	@pred_names=("static_not_taken" "static_taken" "1bit" "2bit" "gshare" "tournament")
+	@pred_vals=(0 1 2 3 4 5)
+	@rm -f branch_compare.csv
+	@for i in $${!pred_vals[@]}; do \
+		VAL=$${pred_vals[$$i]}; \
+		NAME=$${pred_names[$$i]}; \
+		$(IVERILOG) -g2012 +define+PREDICTOR_TYPE=$$VAL -o $(OUT) $(SRC); \
+		$(VVP) $(OUT) > /dev/null; \
+		if [ $$i -eq 0 ]; then \
+			cat results_$$VAL.csv >> branch_compare.csv; \
+		else \
+			tail -n +2 results_$$VAL.csv >> branch_compare.csv; \
+		fi; \
+	done
 
 # ==========================================
 # Firmware Build
