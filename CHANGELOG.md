@@ -2,6 +2,11 @@
 
 All notable changes to the RvNOVA RISC-V CPU project will be documented in this file.
 
+## [unreleased] - Branch predictor analysis
+
+### Added
+- Integrated branch predictor report parsing and timing-estimate calculation into branch_predictor.py. Assumes configurable misprediction penalty (default: 3 cycles). Run the tool with `python3 branch_predictor.py --verilog --tb "sim/top DUTs/tb_branch.v"` to parse the built-in Verilog report and compute effective cycles per predictor.
+
 ## [0.1.0] - 2026-06-05
 
 ### Added
@@ -180,3 +185,9 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
   - `firmware/` files shifted to sub-directory `firmware/core/`.
   - `firmware/testbenches/` created for software-driven tests.
   - `sim/unit DUTs/tb_lsu.v` and `sim/unit DUTs/tb_pc.v` added as individual unit tests for the `rtl/core/load_store_unit.v` and `rtl/core/pc_mux.v` modules respectively.
+## [unreleased] - Branch predictor hardware analysis run
+
+### Added
+- Hardware branch predictor analysis with misprediction penalty of 3 cycles.
+- Analysis run on testbench: sim/top DUTs/tb_branch.v
+- Results: 4 branches simulated over 50 cycles.
