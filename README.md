@@ -2,14 +2,14 @@
 
 ## RISC-V RV32I Core
 
-A lightweight bare-metal RISC-V SoC featuring a modular single-cycle RV32I processor written in Verilog HDL. RvNOVA is designed with clean module separation, privileged architecture support, firmware execution, and comprehensive verification while remaining easy to understand and extend.
+A lightweight bare-metal RISC-V SoC featuring a modular 5-stage pipelined RV32I processor written in Verilog HDL. RvNOVA is designed with clean module separation, privileged architecture support, firmware execution, and comprehensive verification while remaining easy to understand and extend.
 
 ---
 
 # 🚀 Features
 
 * **ISA:** RISC-V RV32I (Base Integer Instruction Set)
-* **Architecture:** Single-cycle Harvard Architecture
+* **Architecture:** 5-Stage Pipeline (IF, ID, EX, MEM, WB) with precise exceptions
 * **Privilege Support:** Machine Mode (M-Mode)
 * **Firmware Support:** Bare-metal C and Assembly
 * **Verification:** Dedicated unit and integration testbenches
@@ -17,16 +17,22 @@ A lightweight bare-metal RISC-V SoC featuring a modular single-cycle RV32I proce
 ### Implemented Features
 
 * Complete RV32I Base Integer ISA
+* 5-stage pipelined datapath: Fetch, Decode, Execute, Memory, Write-back
+* **Hazard & Forwarding Unit:**
+  - EX-EX and MEM-EX operands forwarding
+  - Load-use hazard stalling (1 cycle)
+  - CSR / system instruction pipeline barrier stalling (drains pipeline)
+  - Register File internal write-first forwarding (resolves WB-to-ID hazard)
 * ALU with arithmetic, logical and shift operations
 * Register File (32 × 32-bit)
 * Immediate Generator
-* Branch and Jump Logic
+* Branch and Jump Logic resolved in Execute stage (2-cycle penalty with flushes)
 * Load / Store Unit with byte enables
 * CSR Subsystem
 * Trap Controller
 * ECALL / EBREAK
 * MRET
-* WFI
+* WFI (Wait for Interrupt)
 * Illegal Instruction Detection
 * Illegal CSR Access Detection
 * Machine External Interrupt Support
@@ -71,6 +77,7 @@ RvNOVA/
 │   │   ├── alu.v
 │   │   ├── alu_decode.v
 │   │   ├── csr_regfile.v
+│   │   ├── hazard_unit.v
 │   │   ├── imm_gen.v
 │   │   ├── load_store_unit.v
 │   │   ├── main_decode.v
@@ -91,15 +98,22 @@ RvNOVA/
 │   ├── linker.ld
 │   └── test.S
 │
-├── tb/
-│   ├── tb_alu.v
-│   ├── tb_csr_regfile.v
-│   ├── tb_imm_gen.v
-│   ├── tb_load_store.v
-│   ├── tb_regfile.v
-│   ├── tb_riscv_top.v
-│   ├── tb_trapexec.v
-│   └── ...
+├── sim/
+│   ├── SoC DUTs/
+│   │   └── tb_rvnova_soc.v
+│   ├── top DUTs/
+│   │   ├── tb_branch.v
+│   │   ├── tb_csr.v
+│   │   ├── tb_integrated.v
+│   │   └── tb_riscv_top.v
+│   └── unit DUTs/
+│       ├── alu_tb.v
+│       ├── immgen_tb.v
+│       ├── tb_csr_regfile.v
+│       ├── tb_lsu.v
+│       ├── tb_pc.v
+│       ├── tb_regfile.v
+│       └── tb_trapexec.v
 │
 ├── scripts/
 │   ├── build.sh

@@ -191,3 +191,17 @@ All notable changes to the RvNOVA RISC-V CPU project will be documented in this 
 - Hardware branch predictor analysis with misprediction penalty of 3 cycles.
 - Analysis run on testbench: sim/top DUTs/tb_branch.v
 - Results: 4 branches simulated over 50 cycles.
+
+## [3.0.0] - 2026-07-03
+
+### Added
+- Phase 4: Pipelined Architecture
+  - Refactored `rtl/core/riscv_top.v` to implement a 5-stage pipeline (`IF` -> `ID` -> `EX` -> `MEM` -> `WB`) with precise exceptions.
+  - Implemented `rtl/core/hazard_unit.v` to handle:
+    - Data hazards via operand forwarding (EX-EX and MEM-EX).
+    - Load-use hazards via a 1-cycle stall.
+    - CSR/system instructions via a pipeline barrier stall that drains the pipeline.
+  - Added stall support to `rtl/core/pc.v`.
+  - Added internal write-to-read forwarding to `rtl/core/regfile.v` to resolve WB-to-ID data hazards.
+  - Updated test runner `scripts/build.sh` to compile with SoC peripheral modules, locate testbenches under `sim/`, and correctly ignore expected misaligned assertions in the LSU tests.
+  - Verified implementation against the full 12-testbench verification suite.

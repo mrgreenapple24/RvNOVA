@@ -152,7 +152,7 @@ module tb_csr;
         rst_n = 1;
 
         // Run for some cycles
-        #300;
+        #500;
 
 
         $display("-----------------------------------");
