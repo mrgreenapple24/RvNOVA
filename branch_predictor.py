@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-branch_predictor.py
+branch_predictor_enhanced.py
 
 Simulate branch predictors on synthetic traces and report counts/accuracies.
 Generates traces of N branches for types: if, switch, loop, mixed.
-Predictors: always-taken, always-not, bimodal (2-bit), gshare.
+Predictors: always-taken, always-not, bimodal (2-bit), gshare, pag, tournament, perceptron, loop-exit.
 
-Usage: python3 branch_predictor.py [--trials N] [--branches N] [--seed S]
+Usage: python3 branch_predictor_enhanced.py [--trials N] [--branches N] [--seed S]
 """
 
 import argparse
@@ -69,6 +69,181 @@ class GSharePredictor:
             if self.table[i] > 0:
                 self.table[i] -= 1
         self.history = ((self.history << 1) | (1 if outcome else 0)) & ((1 << self.hist_bits) - 1)
+
+
+class PAgPredictor:
+    """Per-Address history with global Pattern History Table.
+    Each PC has its own history register, shared PHT indexed by XOR of PC and history."""
+    def __init__(self, hist_bits=8, table_bits=10):
+        self.hist_bits = hist_bits
+        self.mask = (1 << hist_bits) - 1
+        self.size = 1 << table_bits
+        self.table = [1] * self.size
+        self.history = defaultdict(int)  # Per-PC history
+
+    def _idx(self, pc, hist):
+        return ((pc ^ (hist & self.mask)) & (self.size - 1))
+
+    def predict(self, pc):
+        hist = self.history[pc]
+        idx = self._idx(pc, hist)
+        return self.table[idx] >= 2
+
+    def update(self, pc, outcome):
+        hist = self.history[pc]
+        idx = self._idx(pc, hist)
+        if outcome:
+            if self.table[idx] < 3:
+                self.table[idx] += 1
+        else:
+            if self.table[idx] > 0:
+                self.table[idx] -= 1
+        # Update per-PC history
+        self.history[pc] = ((hist << 1) | (1 if outcome else 0)) & ((1 << self.hist_bits) - 1)
+
+
+class TournamentPredictor:
+    """Hybrid predictor combining bimodal and gshare with meta-predictor selection.
+    Meta-predictor chooses which predictor is more reliable for each PC."""
+    def __init__(self, table_bits=10, hist_bits=8):
+        self.bimodal = BimodalPredictor(table_bits)
+        self.gshare = GSharePredictor(hist_bits, table_bits)
+        self.meta_table = [1] * (1 << table_bits)  # 2-bit counters: bias toward bimodal
+        self.size = 1 << table_bits
+
+    def _meta_idx(self, pc):
+        return pc & (self.size - 1)
+
+    def predict(self, pc):
+        bio_pred = self.bimodal.predict(pc)
+        gsh_pred = self.gshare.predict(pc)
+        
+        meta_idx = self._meta_idx(pc)
+        use_gshare = self.meta_table[meta_idx] >= 2
+        return gsh_pred if use_gshare else bio_pred
+
+    def update(self, pc, outcome):
+        bio_pred = self.bimodal.predict(pc)
+        gsh_pred = self.gshare.predict(pc)
+        
+        meta_idx = self._meta_idx(pc)
+        use_gshare = self.meta_table[meta_idx] >= 2
+        
+        # Update meta-predictor: increment if correct predictor agrees, decrement otherwise
+        if use_gshare:
+            # Currently using gshare; update based on whether gshare was correct
+            if (gsh_pred == outcome) and (bio_pred != outcome):
+                # Gshare correct, bimodal wrong -> stay with gshare
+                if self.meta_table[meta_idx] < 3:
+                    self.meta_table[meta_idx] += 1
+            elif (gsh_pred != outcome) and (bio_pred == outcome):
+                # Gshare wrong, bimodal correct -> switch to bimodal
+                if self.meta_table[meta_idx] > 0:
+                    self.meta_table[meta_idx] -= 1
+        else:
+            # Currently using bimodal
+            if (bio_pred == outcome) and (gsh_pred != outcome):
+                if self.meta_table[meta_idx] > 0:
+                    self.meta_table[meta_idx] -= 1
+            elif (bio_pred != outcome) and (gsh_pred == outcome):
+                if self.meta_table[meta_idx] < 3:
+                    self.meta_table[meta_idx] += 1
+        
+        # Always update both predictors
+        self.bimodal.update(pc, outcome)
+        self.gshare.update(pc, outcome)
+
+
+class PerceptronPredictor:
+    """Neural-inspired predictor using perceptron learning.
+    Weights history bits and PC bits to make predictions."""
+    def __init__(self, hist_bits=8, table_bits=10):
+        self.hist_bits = hist_bits
+        self.history = 0
+        self.mask = (1 << hist_bits) - 1
+        self.size = 1 << table_bits
+        # Weight tables: one per history bit plus bias
+        self.weights = [[0] * (hist_bits + 1) for _ in range(self.size)]
+
+    def _idx(self, pc):
+        return pc & (self.size - 1)
+
+    def _compute_sum(self, pc):
+        """Compute weighted sum of history bits."""
+        idx = self._idx(pc)
+        weights = self.weights[idx]
+        total = weights[0]  # Bias term
+        for i in range(self.hist_bits):
+            bit = (self.history >> i) & 1
+            total += weights[i + 1] * (1 if bit else -1)
+        return total
+
+    def predict(self, pc):
+        return self._compute_sum(pc) > 0
+
+    def update(self, pc, outcome):
+        idx = self._idx(pc)
+        prediction = self.predict(pc)
+        
+        # Perceptron learning rule: update weights if misprediction
+        if prediction != outcome:
+            weights = self.weights[idx]
+            adjustment = 1 if outcome else -1
+            weights[0] += adjustment  # Bias
+            for i in range(self.hist_bits):
+                bit = (self.history >> i) & 1
+                if bit:
+                    weights[i + 1] += adjustment
+                else:
+                    weights[i + 1] -= adjustment
+        
+        # Update global history
+        self.history = ((self.history << 1) | (1 if outcome else 0)) & ((1 << self.hist_bits) - 1)
+
+
+class LoopExitPredictor:
+    """Specialized predictor for loop exit detection.
+    Tracks loop iteration counts and predicts taken when exiting."""
+    def __init__(self, hist_bits=6, table_bits=10):
+        self.size = 1 << table_bits
+        self.loop_count = [0] * self.size  # Iteration count per PC
+        self.loop_max = [0] * self.size    # Expected max iterations per PC
+        self.confidence = [0] * self.size  # Confidence in max estimate (2-bit)
+
+    def _idx(self, pc):
+        return pc & (self.size - 1)
+
+    def predict(self, pc):
+        idx = self._idx(pc)
+        # If we've seen this loop many times and iteration >= max, predict taken (exit)
+        if self.confidence[idx] >= 2 and self.loop_count[idx] >= self.loop_max[idx] and self.loop_max[idx] > 0:
+            return True
+        # Default: predict not taken (continue loop)
+        return False
+
+    def update(self, pc, outcome):
+        idx = self._idx(pc)
+        
+        if outcome:  # Branch taken (loop exit)
+            # Record this iteration count as potential loop max
+            if self.loop_count[idx] > self.loop_max[idx]:
+                self.loop_max[idx] = self.loop_count[idx]
+                self.confidence[idx] = 1
+            elif self.loop_count[idx] == self.loop_max[idx]:
+                # Consistent: increase confidence
+                if self.confidence[idx] < 3:
+                    self.confidence[idx] += 1
+            else:
+                # Inconsistent: decrease confidence
+                if self.confidence[idx] > 0:
+                    self.confidence[idx] -= 1
+            
+            # Reset iteration counter on exit
+            self.loop_count[idx] = 0
+        else:  # Branch not taken (loop continues)
+            # Increment iteration counter
+            if self.loop_count[idx] < 255:  # Saturate at 255
+                self.loop_count[idx] += 1
 
 
 # Trace generators
@@ -159,6 +334,10 @@ def run_experiment(trials=20, n_branches=1000, seed=None):
         ('always-not', lambda: StaticPredictor(False)),
         ('bimodal-2bit', lambda: BimodalPredictor(table_bits=10)),
         ('gshare-8', lambda: GSharePredictor(hist_bits=8, table_bits=10)),
+        ('pag-8', lambda: PAgPredictor(hist_bits=8, table_bits=10)),
+        ('tournament', lambda: TournamentPredictor(table_bits=10, hist_bits=8)),
+        ('perceptron', lambda: PerceptronPredictor(hist_bits=8, table_bits=10)),
+        ('loop-exit', lambda: LoopExitPredictor(table_bits=10)),
     ]
 
     results = defaultdict(lambda: defaultdict(list))
@@ -180,87 +359,17 @@ def run_experiment(trials=20, n_branches=1000, seed=None):
             avg_correct = sum(c for c, _ in runs) / len(runs)
             avg_total = sum(t for _, t in runs) / len(runs)
             avg_acc = 100.0 * avg_correct / avg_total
-            print(f"  {pname:12s}: avg correct = {avg_correct:.1f}/{avg_total:.0f} ({avg_acc:.2f}%)")
+            print(f"  {pname:15s}: avg correct = {avg_correct:.1f}/{avg_total:.0f} ({avg_acc:.2f}%)")
 
     # Sample single-run counts for one trace per type
-    print("\nSample single-run counts (one trace of {n_branches} branches):")
+    print(f"\nSample single-run counts (one trace of {n_branches} branches):")
     for tname, genfun in types:
         trace = list(genfun())
         print(f"\nType: {tname}")
         for pname, pfactory in predictors_factories:
             pred = pfactory()
             correct, total = evaluate_predictor(pred, iter(trace))
-            print(f"  {pname:12s}: {correct}/{total} correct ({100.0*correct/total:.2f}%)")
-
-
-import subprocess
-import os
-import re
-import shutil
-
-
-def run_verilog_testbench(tb_path, workdir=None):
-    """Compile and run a Verilog testbench (tb_path) and parse the branch predictor report.
-    Returns a dict: { 'cycles': int, 'total_branches': int, 'bimodal_mis': int, 'gshare_mis': int, 'tournament_mis': int, 'perceptron_mis': int, 'accuracy_*': float }
-    """
-    if workdir is None:
-        workdir = os.getcwd()
-    tb_abs = os.path.join(workdir, tb_path)
-    if not os.path.exists(tb_abs):
-        raise FileNotFoundError(f"Testbench not found: {tb_abs}")
-
-    # Collect RTL core files from rtl/ (only, no sim/), and predictor_tb
-    core_files = []
-    
-    # First: Add RTL core files
-    find_cmd = "find rtl -type f -name '*.v' 2>/dev/null | sort"
-    proc = subprocess.run(find_cmd, shell=True, cwd=workdir, capture_output=True, text=True)
-    core_files.extend([p for p in proc.stdout.splitlines() if p.strip()])
-    
-    # Second: Add the predictor monitor module (not a testbench, just a monitor)
-    predictor_tb = os.path.join(workdir, 'sim', 'predictor_tb.v')
-    if os.path.exists(predictor_tb):
-        core_files.append(predictor_tb)
-    
-    # Third: Add the specific testbench (the one we want to run)
-    core_files.append(tb_abs)
-
-    iv_out = os.path.join(workdir, 'sim_temp.out')
-    # Build iverilog command
-    iverilog = shutil.which('iverilog')
-    vvp = shutil.which('vvp')
-    if not iverilog or not vvp:
-        raise RuntimeError('iverilog or vvp not found in PATH; install Icarus Verilog to run simulations')
-
-    cmd = [iverilog, '-g2012', '-o', iv_out] + core_files
-    comp = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
-    if comp.returncode != 0:
-        raise RuntimeError(f'iverilog failed:\n{comp.stderr}\n{comp.stdout}')
-
-    run = subprocess.run([vvp, iv_out], cwd=workdir, capture_output=True, text=True)
-    out = run.stdout + '\n' + run.stderr
-
-    # Parse report from the output
-    # Looking for "----- Branch Predictor Report -----" section
-    res = {}
-    m = re.search(r'Cycles simulated:\s*(\d+)', out)
-    res['cycles'] = int(m.group(1)) if m else None
-    m = re.search(r'Total branches:\s*(\d+)', out)
-    res['total_branches'] = int(m.group(1)) if m else None
-    m = re.search(r'Bimodal mispredictions:\s*(\d+)\s*\(accuracy:\s*([0-9.]+)%\)', out)
-    res['bimodal_mis'] = int(m.group(1)) if m else None
-    res['bimodal_acc'] = float(m.group(2)) if m else None
-    m = re.search(r'Gshare mispredictions:\s*(\d+)\s*\(accuracy:\s*([0-9.]+)%\)', out)
-    res['gshare_mis'] = int(m.group(1)) if m else None
-    res['gshare_acc'] = float(m.group(2)) if m else None
-    m = re.search(r'Tournament mispredictions:\s*(\d+)\s*\(accuracy:\s*([0-9.]+)%\)', out)
-    res['tournament_mis'] = int(m.group(1)) if m else None
-    res['tournament_acc'] = float(m.group(2)) if m else None
-    m = re.search(r'Perceptron mispredictions:\s*(\d+)\s*\(accuracy:\s*([0-9.]+)%\)', out)
-    res['perceptron_mis'] = int(m.group(1)) if m else None
-    res['perceptron_acc'] = float(m.group(2)) if m else None
-
-    return res
+            print(f"  {pname:15s}: {correct}/{total} correct ({100.0*correct/total:.2f}%)")
 
 
 if __name__ == '__main__':
@@ -268,78 +377,6 @@ if __name__ == '__main__':
     parser.add_argument('--trials', type=int, default=20)
     parser.add_argument('--branches', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=None)
-    parser.add_argument('--verilog', action='store_true', help='Run Verilog testbench integration and parse hardware report')
-    parser.add_argument('--tb', type=str, default='sim/top DUTs/tb_branch.v', help='Path to Verilog testbench (relative to repo root)')
-    parser.add_argument('--mispred-penalty', type=int, default=3, help='Assumed cycle penalty per misprediction')
-    parser.add_argument('--write-docs', action='store_true', help='Append changelog and README notes about this run')
     args = parser.parse_args()
 
-    if args.verilog:
-        print('Running Verilog testbench and parsing branch predictor report...')
-        try:
-            stats = run_verilog_testbench(args.tb)
-        except Exception as e:
-            print(f'Verilog run failed: {e}')
-            print('Falling back to synthetic mode.')
-            run_experiment(trials=args.trials, n_branches=args.branches, seed=args.seed)
-        else:
-            if all(v is None for v in stats.values()):
-                print(f'ERROR: Could not parse branch predictor report from {args.tb}')
-                print('Full output capture may have failed. Ensure --tb points to a testbench with branch_predictor_tb instantiation.')
-                import sys
-                sys.exit(1)
-            
-            print('\n=== Parsed Hardware Report ===')
-            print(f'Cycles simulated: {stats["cycles"]}')
-            print(f'Total branches: {stats["total_branches"]}')
-            print()
-            
-            # Display per-predictor mispredictions and accuracies
-            print('=== Predictor Performance ===')
-            predictors = {
-                'bimodal': ('bimodal_mis', 'bimodal_acc'),
-                'gshare': ('gshare_mis', 'gshare_acc'),
-                'tournament': ('tournament_mis', 'tournament_acc'),
-                'perceptron': ('perceptron_mis', 'perceptron_acc'),
-            }
-            
-            base_cycles = stats.get('cycles') or 0
-            total_branches = stats.get('total_branches') or 1
-            
-            for name, (mis_key, acc_key) in predictors.items():
-                mispreds = stats.get(mis_key)
-                accuracy = stats.get(acc_key)
-                if mispreds is not None:
-                    # Compute effective cycles with misprediction penalty
-                    eff_cycles = base_cycles + mispreds * args.mispred_penalty
-                    ratio = (eff_cycles / base_cycles) if base_cycles else 0
-                    correct = total_branches - mispreds
-                    print(f'{name:12s}: {mispreds:3d} mispreds out of {total_branches:3d} '
-                          f'({accuracy:6.2f}% accurate) | '
-                          f'base: {base_cycles:5d} cycles -> {eff_cycles:5d} cycles '
-                          f'(ratio: {ratio:.3f})')
-            
-            print()
-            print(f'Note: Effective cycles calculated with {args.mispred_penalty} cycle penalty per misprediction')
-            
-            if args.write_docs:
-                # Append short notes to CHANGELOG.md and README.md
-                changelog = os.path.join(os.getcwd(), 'CHANGELOG.md')
-                readme = os.path.join(os.getcwd(), 'README.md')
-                note = (f'\n## [unreleased] - Branch predictor hardware analysis run\n\n'
-                        f'### Added\n'
-                        f'- Hardware branch predictor analysis with misprediction penalty of {args.mispred_penalty} cycles.\n'
-                        f'- Analysis run on testbench: {args.tb}\n'
-                        f'- Results: {total_branches} branches simulated over {base_cycles} cycles.\n')
-                try:
-                    with open(changelog, 'a') as f:
-                        f.write(note)
-                    with open(readme, 'a') as f:
-                        f.write(f'\n### Latest hardware analysis\n\n'
-                                f'Branches: {total_branches}, Cycles: {base_cycles}, Mispred penalty: {args.mispred_penalty} cycles\n')
-                    print('\nUpdated CHANGELOG.md and README.md')
-                except Exception as e:
-                    print(f'Failed to write docs: {e}')
-    else:
-        run_experiment(trials=args.trials, n_branches=args.branches, seed=args.seed)
-
+    run_experiment(trials=args.trials, n_branches=args.branches, seed=args.seed)
